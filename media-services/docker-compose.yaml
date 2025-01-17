@@ -1,0 +1,46 @@
+# Media Services
+# - Plex
+# - Jellyfin
+
+services:
+  plex:
+    image: linuxserver/plex:latest
+    container_name: plex
+    # If you would like to use external storage
+    #volumes:
+    #  - /mnt/e/media-services/plex-data:/config
+    ports:
+      - "32400:32400"
+    networks:
+      - media-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  jellyfin:
+    image: linuxserver/jellyfin:latest
+    container_name: jellyfin
+    # If you would like to use external storage
+    #volumes:
+    #  - /mnt/e/media-services/jellyfin-data:/config
+    ports:
+      - "8096:8096"
+    networks:
+      - media-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+networks:
+  media-network:
+    external: true
