@@ -1,20 +1,26 @@
-# AI and Search Services
+# AI, Search and RAG Services
 # - Ollama
 # - Open WebUI
 # - SearXNG
+# - AnythingLLM
+# - n8n
+# - Chroma DB
+# - RAG Worker
 
 services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
+    restart: always
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - OLLAMA_KEEP_ALIVE=15m
-      - ENABLE_IMAGE_GENERATION=True
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE}
+      - ENABLE_IMAGE_GENERATION=${ENABLE_IMAGE_GENERATION}
+      - NVIDIA_VISIBLE_DEVICES=all
     # If you would like to use external storage
-    #volumes:
-    #  - /mnt/e/ai-services/ollama:/root/.ollama
+    volumes:
+      - ${VOLUME_PATH}/ollama:/root/.ollama
     networks:
       - ai-network
     ports:
@@ -26,25 +32,31 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    runtime: nvidia
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   open-webui:
     depends_on:
       - ollama
     image: ghcr.io/open-webui/open-webui:latest
     container_name: open-webui
-    restart: unless-stopped
+    restart: always
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - 'OLLAMA_BASE_URL=http://ollama:11434'
-      - ENABLE_RAG_WEBSEARCH=True
-      - RAG_WEB_SEARCH_ENGINE=searxng
-      - RAG_WEB_SEARCH_RESULT_COUNT=10
-      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=50
-      - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - ENABLE_RAG_WEBSEARCH=${ENABLE_RAG_WEBSEARCH}
+      - RAG_WEB_SEARCH_ENGINE=${RAG_WEB_SEARCH_ENGINE}
+      - RAG_WEB_SEARCH_RESULT_COUNT=${RAG_WEB_SEARCH_RESULT_COUNT}
+      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=${RAG_WEB_SEARCH_CONCURRENT_REQUESTS}
+      - SEARXNG_QUERY_URL=${SEARXNG_QUERY_URL}
     # If you would like to use external storage
-    #volumes:
-    #  - /mnt/e/ai-services/open-webui:/app/backend/data
+    volumes:
+      - ${VOLUME_PATH}/open-webui:/app/backend/data
     networks:
       - ai-network
     ports:
@@ -58,17 +70,97 @@ services:
       - open-webui
     image: searxng/searxng:latest
     container_name: searxng
-    restart: unless-stopped
+    restart: always
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
+      - PUID=${PUID}
+      - PGID=${PGID}
     # If you would like to use external storage
-    #volumes:
-    #  - /mnt/e/ai-services/searxng:/etc/searxng
+    volumes:
+      - ${VOLUME_PATH}/searxng:/etc/searxng
     networks:
       - ai-network
     ports:
       - "8888:8080"
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    restart: always
+    environment:
+      - IS_PERSISTENT=${IS_PERSISTENT}
+    # If you would like to use external storage
+    volumes:
+      - ${VOLUME_PATH}/data/chroma:/chroma/chroma
+    networks:
+      - ai-network
+    ports:
+      - "8005:8000"
+
+  anythingllm:
+    depends_on:
+      - ollama
+      - chromadb
+    image: mintplexlabs/anythingllm:latest
+    container_name: anythingllm
+    restart: always
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - CHROMA_DB_IMPL=chroma
+      - VECTOR_DB_HOST=chromadb
+      - VECTOR_DB_PORT=8000
+      - STORAGE_DIR=/app/server/storage
+      - ALLOW_OFFLINE_MODE=true
+      - DISABLE_TELEMETRY=true
+    volumes:
+      - ${VOLUME_PATH}/anythingllm:/app/server/storage  # Persistent settings, documents, etc.
+    ports:
+      - "3001:3001"  # AnythingLLM UI port
+    networks:
+      - ai-network
+
+  rag-worker:
+    depends_on:
+      - chromadb
+    build: ${VOLUME_PATH}/rag-worker
+    container_name: rag-worker
+    restart: always
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}  # Access Ollama from WSL
+      - EMBED_MODEL_NAME=${EMBED_MODEL_NAME} # Embedding model
+    # If you would like to use external storage
+    volumes:
+      - ${VOLUME_PATH}/rag-worker:/app
+      - ${VOLUME_PATH}/data:/app/data
+    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8001"]
+    networks:
+      - ai-network
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: always
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - N8N_HOST=n8n.local
+      - WEBHOOK_TUNNEL_URL=http://n8n.local:5678
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+    volumes:
+      - ${VOLUME_PATH}/n8n:/home/node/.n8n
+      - ${VOLUME_PATH}/data/support_kb:/data/support_kb
+      - ${VOLUME_PATH}/data/finance_kb:/data/finance_kb
+    networks:
+      - ai-network
+    ports:
+      - "5678:5678"
 
 networks:
   ai-network:
