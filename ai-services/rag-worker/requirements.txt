@@ -1,0 +1,26 @@
+# === LangChain core & community modules ===
+langchain>=0.2.9
+langchain-chroma
+langchain-community
+langchain-ollama
+
+# === Embeddings ===
+ollama
+
+# === Vector store (ChromaDB) ===
+chromadb>=0.4.24
+
+# === Text/document parsing ===
+langchain-text-splitters>=0.0.1
+unstructured
+pypdf
+python-docx
+pillow
+tesseract
+
+# === Web API ===
+fastapi
+uvicorn
+
+# === Optional ===
+python-dotenv
