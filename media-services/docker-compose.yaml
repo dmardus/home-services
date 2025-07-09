@@ -6,40 +6,47 @@ services:
   plex:
     image: linuxserver/plex:latest
     container_name: plex
-    # If you would like to use external storage
-    #volumes:
-    #  - /mnt/e/media-services/plex-data:/config
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - PUID=1000
+      - PGID=1000
+      - VERSION=latest
+    volumes:
+      - ${VOLUME_PATH}/plex-config:/config
+      - ${VOLUME_PATH}/transcode:/transcode
+      - ${MEDIA_PATH}/movies:/data/movies:ro
+      - ${MEDIA_PATH}/demos:/data/demos:ro
+      - ${MEDIA_PATH}/photos:/data/photos:ro
+      - ${MEDIA_PATH}/tv-shows:/data/tv-shows:ro
     ports:
       - "32400:32400"
     networks:
       - media-network
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
 
   jellyfin:
     image: linuxserver/jellyfin:latest
     container_name: jellyfin
-    # If you would like to use external storage
-    #volumes:
-    #  - /mnt/e/media-services/jellyfin-data:/config
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ${VOLUME_PATH}/jellyfin-config:/config
+      - ${VOLUME_PATH}/transcode:/transcode
+      - ${MEDIA_PATH}/movies:/data/movies:ro
+      - ${MEDIA_PATH}/demos:/data/demos:ro
+      - ${MEDIA_PATH}/photos:/data/photos:ro
+      - ${MEDIA_PATH}/tv-shows:/data/tv-shows:ro
     ports:
       - "8096:8096"
     networks:
       - media-network
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
 
 networks:
   media-network:
