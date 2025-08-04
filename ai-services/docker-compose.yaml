@@ -1,10 +1,11 @@
 # AI, Search and RAG Services
 # - Ollama
 # - Open WebUI
-# - SearXNG
-# - AnythingLLM
 # - n8n
-# - Chroma DB
+# - SearXNG
+# - PostgreSQL
+# - Qdrant
+# - ChromaDB
 # - RAG Worker
 
 services:
@@ -12,12 +13,14 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     restart: always
+    runtime: nvidia
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE}
       - ENABLE_IMAGE_GENERATION=${ENABLE_IMAGE_GENERATION}
       - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
     # If you would like to use external storage
     volumes:
       - ${VOLUME_PATH}/ollama:/root/.ollama
@@ -25,14 +28,6 @@ services:
       - ai-network
     ports:
       - "11434:11434"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    runtime: nvidia
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/health"]
       interval: 30s
@@ -64,6 +59,26 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
 
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: always
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - N8N_HOST=n8n.local
+      - WEBHOOK_TUNNEL_URL=http://n8n.local:5678
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+    volumes:
+      - ${VOLUME_PATH}/n8n:/home/node/.n8n
+      - ${VOLUME_PATH}/data/support_kb:/data/support_kb
+      - ${VOLUME_PATH}/data/finance_kb:/data/finance_kb
+    networks:
+      - ai-network
+    ports:
+      - "5678:5678"
+
   searxng:
     depends_on:
       - ollama
@@ -82,6 +97,31 @@ services:
     ports:
       - "8888:8080"
 
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai-network
+    ports:
+      - "5432:5432"
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: always
+    networks:
+      - ai-network
+    ports:
+      - "6333:6333"
+
   chromadb:
     image: chromadb/chroma:latest
     container_name: chromadb
@@ -95,28 +135,6 @@ services:
       - ai-network
     ports:
       - "8005:8000"
-
-  anythingllm:
-    depends_on:
-      - ollama
-      - chromadb
-    image: mintplexlabs/anythingllm:latest
-    container_name: anythingllm
-    restart: always
-    environment:
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
-      - CHROMA_DB_IMPL=chroma
-      - VECTOR_DB_HOST=chromadb
-      - VECTOR_DB_PORT=8000
-      - STORAGE_DIR=/app/server/storage
-      - ALLOW_OFFLINE_MODE=true
-      - DISABLE_TELEMETRY=true
-    volumes:
-      - ${VOLUME_PATH}/anythingllm:/app/server/storage  # Persistent settings, documents, etc.
-    ports:
-      - "3001:3001"  # AnythingLLM UI port
-    networks:
-      - ai-network
 
   rag-worker:
     depends_on:
@@ -142,25 +160,8 @@ services:
       timeout: 10s
       retries: 3
 
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: n8n
-    restart: always
-    environment:
-      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-      - N8N_HOST=n8n.local
-      - WEBHOOK_TUNNEL_URL=http://n8n.local:5678
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
-    volumes:
-      - ${VOLUME_PATH}/n8n:/home/node/.n8n
-      - ${VOLUME_PATH}/data/support_kb:/data/support_kb
-      - ${VOLUME_PATH}/data/finance_kb:/data/finance_kb
-    networks:
-      - ai-network
-    ports:
-      - "5678:5678"
+volumes:
+  postgres_data:
 
 networks:
   ai-network:
