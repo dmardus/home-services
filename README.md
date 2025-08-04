@@ -31,11 +31,12 @@ This directory contains Docker Compose files for running AI-related services.
 
 *   **[Ollama](https://github.com/ollama/ollama):** A service for running large language models locally.
 *   **[Open WebUI](https://github.com/open-webui/open-webui):** An extensible, feature-rich, and user-friendly self-hosted AI platform designed to operate entirely offline.
+*   **[n8n](https://github.com/n8n-io/n8n):** Workflow automation platform that gives technical teams the flexibility of code with the speed of no-code.
 *   **[SearXNG](https://github.com/searxng/searxng):** A free internet metasearch engine which aggregates results from various search services and databases.
+*   **[PostgreSQL](https://www.postgresql.org/):** PostgreSQL is a powerful, open source object-relational database system with over 35 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.
+*   **[Qdrant](https://github.com/qdrant/qdrant):** High-performance, massive-scale Vector Database and Vector Search Engine for the next generation of AI.
 *   **[Chroma DB](https://github.com/chroma-core/chroma):** A document vector database for embedding, similarity search, and retrieval of structured data.
 *   **RAG Worker:** Retrieval-Augmented Generation (LlamaIndex + Python + ollama model) can work with multiple knowledge bases and use llm model dynamically.
-*   **[n8n](https://github.com/n8n-io/n8n):** Workflow automation platform that gives technical teams the flexibility of code with the speed of no-code.
-*   **[AnythingLLM](https://github.com/Mintplex-Labs/anything-llm):** The all-in-one AI app you were looking for. Chat with your docs, use AI Agents, hyper-configurable, multi-user, & no frustrating setup required..
 
 ### Media Services
 
@@ -98,43 +99,18 @@ Before you begin, ensure you have the following installed:
     docker-compose up -d
     ```
 
-*   **Update only rag-worker**
-    ```
-    docker compose up -d --build --no-deps --force-recreate rag-worker
-    ```
-
 *   **Optional: Clean up old unused containers/images**
     ```
     docker system prune -f
     ```
 
-*   **How to ingest documents**
+## Useful links, channels
 
-    ```
-    docker exec -it rag-worker python ingest.py --collection finance_kb --data_path ./data/finance_kb --embed_model nomic-embed-text [optional] --delete_collection true
-    ```
-
-*   **Query RAG via curl**
-
-
-    ```
-    curl -X POST http://localhost:8001/query \
-      -H "Content-Type: application/json" \
-      -d '{"question":"Provide a breakdown for my current investments", "collection":"finance_kb", "model":"phi3"}'
-
-    ```
-
-*   **Integrate RAG into System Prompt of Open WebUI Assistants**
-
-    ```
-    You're a highly knowledgeable  personal finance advisor. When users ask finance-related questions, you must call the RAG API first:
-
-    Endpoint: http://host.docker.internal:8001/query
-    Collection: finance_kb
-    Model: phi3
-
-    If a relevant answer is returned, summarize and include it before giving your own insights.
-    ```
+* [What is Agentic RAG](https://weaviate.io/blog/what-is-agentic-rag)
+* [NetworkChuck](https://www.youtube.com/@NetworkChuck)
+* [Futurepedia](https://www.youtube.com/@futurepedia_io)
+* [Cole Medin](https://www.youtube.com/@ColeMedin)
+* [Nate Herk | AI Automation](https://www.youtube.com/@nateherk)
 
 ## Contributing
 
