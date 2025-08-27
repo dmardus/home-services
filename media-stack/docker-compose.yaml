@@ -2,11 +2,17 @@
 # - Plex
 # - Jellyfin
 
+name: media-stack
+
+networks:
+  media-network:
+    driver: bridge
+
 services:
   plex:
     image: linuxserver/plex:latest
-    container_name: plex
-    restart: unless-stopped
+    container_name: media-plex
+    restart: always
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -28,8 +34,8 @@ services:
 
   jellyfin:
     image: linuxserver/jellyfin:latest
-    container_name: jellyfin
-    restart: unless-stopped
+    container_name: media-jellyfin
+    restart: always
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -47,7 +53,3 @@ services:
       - "8096:8096"
     networks:
       - media-network
-
-networks:
-  media-network:
-    external: true

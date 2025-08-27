@@ -8,10 +8,16 @@
 # - ChromaDB
 # - RAG Worker
 
+name: ai-stack
+
+networks:
+  ai-network:
+    driver: bridge
+
 services:
   ollama:
     image: ollama/ollama:latest
-    container_name: ollama
+    container_name: ai-ollama
     restart: always
     runtime: nvidia
     environment:
@@ -38,7 +44,7 @@ services:
     depends_on:
       - ollama
     image: ghcr.io/open-webui/open-webui:latest
-    container_name: open-webui
+    container_name: ai-open-webui
     restart: always
     environment:
       - PUID=${PUID}
@@ -61,7 +67,7 @@ services:
 
   n8n:
     image: n8nio/n8n:latest
-    container_name: n8n
+    container_name: ai-n8n
     restart: always
     environment:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
@@ -84,7 +90,7 @@ services:
       - ollama
       - open-webui
     image: searxng/searxng:latest
-    container_name: searxng
+    container_name: ai-searxng
     restart: always
     environment:
       - PUID=${PUID}
@@ -99,15 +105,16 @@ services:
 
   postgres:
     image: postgres:latest
-    container_name: postgres
+    container_name: ai-postgres
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - DB_STORAGE_TYPE=SSD
       - PGDATA=/var/lib/postgresql/data
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${VOLUME_PATH}/postgres:/var/lib/postgresql/data
     networks:
       - ai-network
     ports:
@@ -115,7 +122,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: qdrant
+    container_name: ai-qdrant
     restart: always
     networks:
       - ai-network
@@ -124,7 +131,7 @@ services:
 
   chromadb:
     image: chromadb/chroma:latest
-    container_name: chromadb
+    container_name: ai-chromadb
     restart: always
     environment:
       - IS_PERSISTENT=${IS_PERSISTENT}
@@ -140,7 +147,7 @@ services:
     depends_on:
       - chromadb
     build: ${VOLUME_PATH}/rag-worker
-    container_name: rag-worker
+    container_name: ai-rag-worker
     restart: always
     environment:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}  # Access Ollama from WSL
@@ -159,10 +166,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-volumes:
-  postgres_data:
-
-networks:
-  ai-network:
-    external: true
