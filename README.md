@@ -5,11 +5,11 @@ A collection of Docker Compose files for self-hosting various services at home.
 ## Table of Contents
 
 - [About](#about)
-- [Services](#services)
-  - [AI Services](#ai-services)
-  - [Media Services](#media-services)
+- [Stacks](#stacks)
+  - [Cloud Stack](#ccloud-stack)
+  - [AI Stack](#ai-stack)
+  - [Media Stack](#media-sstack)
   - [NVIDIA SMI](#nvidia-smi)
-  - [Productivity Services](#productivity-services)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -21,11 +21,19 @@ A collection of Docker Compose files for self-hosting various services at home.
 
 This repository contains Docker Compose files that allow you to easily deploy and manage various services on your home server or local machine. The goal is to simplify the setup and maintenance of self-hosted applications for personal use.
 
-## Services
+## Stacks
 
 This repository is organized into several categories of services, each with its own directory containing the relevant `docker-compose.yml` file and any necessary configuration files.
 
-### AI Services
+### Cloud Stack
+
+This directory contains Docker Compose files for running cloud services.
+
+*   **[Nextcloud](https://nextcloud.com):** A self-hosted file synchronization and sharing solution.
+*   **[Immich](https://github.com/immich-app/immich):** High performance self-hosted photo and video management solution.
+*   **[Joplin](https://github.com/laurent22/joplin):** The privacy-focused note taking app with sync capabilities for Windows, macOS, Linux, Android and iOS.
+
+### AI Stack
 
 This directory contains Docker Compose files for running AI-related services.
 
@@ -38,7 +46,7 @@ This directory contains Docker Compose files for running AI-related services.
 *   **[Chroma DB](https://github.com/chroma-core/chroma):** A document vector database for embedding, similarity search, and retrieval of structured data.
 *   **RAG Worker:** Retrieval-Augmented Generation (LlamaIndex + Python + ollama model) can work with multiple knowledge bases and use llm model dynamically.
 
-### Media Services
+### Media Stack
 
 This directory contains Docker Compose files for running media-related services.
 
@@ -50,12 +58,6 @@ This directory contains Docker Compose files for running media-related services.
 This directory contains Docker Compose files for running services related to NVIDIA GPU management.
 *   **[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html):** A toolkit that allows you to run GPU-accelerated applications in containers.
 *   **[nvidia-docker2](https://github.com/NVIDIA/nvidia-docker):** An alternative to the NVIDIA Container Toolkit, providing similar functionality.
-
-### Productivity Services
-
-This directory contains Docker Compose files for running productivity-related services.
-
-*   **[Nextcloud](https://nextcloud.com):** A self-hosted file synchronization and sharing solution.
 
 ## Getting Started
 

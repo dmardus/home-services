@@ -1,0 +1,201 @@
+# Cloud (photo, files, notes) Services
+# - PostgreSQL
+# - Redis
+# - NextCloud
+# - Immich
+# - Joplin
+
+name: cloud-stack
+
+networks:
+  cloud-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  immich-model-cache:
+
+services:
+  # ---------- DATA STORES ----------
+  postgres:
+    image: postgres:latest
+    container_name: cloud-postgres
+    restart: always
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_STORAGE_TYPE=SSD
+      - PGDATA=/var/lib/postgresql/data
+      # POSTGRES_DB not set on purpose; we create 3 DBs via init SQL
+    volumes:
+      - ${VOLUME_PATH}/postgres:/var/lib/postgresql/data
+      - ./db/initdb:/docker-entrypoint-initdb.d:ro   # place 01-init.sql here (see below)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cloud-network
+
+  redis:
+    image: redis:latest
+    container_name: cloud-redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cloud-network
+
+  # ---------- NEXTCLOUD ----------
+  nextcloud:
+    image: lscr.io/linuxserver/nextcloud:latest
+    container_name: nextcloud
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=${GENERIC_TIMEZONE}
+      # - NEXTCLOUDTrustedDomains: ${NEXTCLOUD_DOMAIN:-nextcloud.local}
+      # DB
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nextcloud_db
+      - POSTGRES_USER=${NC_DB_USER}
+      - POSTGRES_PASSWORD=${NC_DB_PASS}
+      # Redis cache/locking (you’ll still enable memcache in config.php post-install)
+      - REDIS_HOST=redis
+      # - PHP tuning (optional)
+      # - PHP_MEMORY_LIMIT: ${NC_PHP_MEMORY_LIMIT:-1024M}
+      # - PHP_UPLOAD_LIMIT: ${NC_UPLOAD_LIMIT:-4G}
+      # - SMTP (optional; uncomment & set)
+      # - SMTP_HOST: smtp.example.com
+      # - SMTP_SECURE: tls
+      # - SMTP_PORT: 587
+      # - SMTP_AUTHTYPE: LOGIN
+      # - SMTP_NAME: noreply@example.com
+      # - SMTP_PASSWORD: yourpass
+      # - MAIL_FROM_ADDRESS: noreply
+      # - MAIL_DOMAIN: example.com
+    volumes:
+      - ${VOLUME_PATH}/nextcloud/data:/data
+      - ${VOLUME_PATH}/nextcloud/config:/config
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/80 && echo -e 'GET /status.php HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q 'HTTP/1.1 200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    networks:
+      - cloud-network
+
+  # ---------- IMMICH ----------
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:release
+    container_name: immich-server
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=${GENERIC_TIMEZONE}
+      # Database
+      - DB_HOSTNAME=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=${IM_DB_USER}
+      - DB_PASSWORD=${IM_DB_PASS}
+      - DB_DATABASE_NAME=immich_db
+      # Redis
+      - REDIS_HOSTNAME=redis
+      - REDIS_PORT=6379
+      # Upload/media
+      - IMMICH_MEDIA_LOCATION=/usr/src/app/upload
+      # Optional auth & public URL
+      # IMMICH_SERVER_URL: https://${IMMICH_DOMAIN}
+    volumes:
+      - ${VOLUME_PATH}/immich-uploads:/usr/src/app/upload
+      - ${VOLUME_PATH}/immich-thumbs:/usr/src/app/thumbs
+      - ${VOLUME_PHOTO_PATH}:${VOLUME_PHOTO_PATH}:ro
+    healthcheck:
+      disable: false
+    networks:
+      - cloud-network
+    ports:
+      - 2283:2283
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    container_name: immich-ml
+    restart: always
+    environment:
+      - TZ=${GENERIC_TIMEZONE}
+      - MACHINE_LEARNING_PORT=3003
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    device_requests:
+      - driver: nvidia
+        count: all
+        capabilities: [gpu]
+    volumes:
+      - immich-model-cache:/cache
+    healthcheck:
+      disable: false
+    networks:
+      - cloud-network
+
+  # ---------- JOPLIN SERVER ----------
+  joplin:
+    image: lscr.io/linuxserver/joplin:latest
+    container_name: joplin
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - TZ=${GENERIC_TIMEZONE}
+      - APP_PORT=22300
+      # Base URL used by clients; set when attaching Traefik later
+      # APP_BASE_URL: ${JOPLIN_BASE_URL:-http://joplin.local}
+      - DB_CLIENT=pg
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DATABASE=joplin_db
+      - POSTGRES_USER=${JP_DB_USER}
+      - POSTGRES_PASSWORD=${JP_DB_PASS}
+      # Initial admin
+      # - ADMIN_USER: ${JOPLIN_ADMIN_EMAIL:?}
+      # - ADMIN_PASSWORD: ${JOPLIN_ADMIN_PASS:?}
+      # - Email (optional)
+      # - MAILER_ENABLED: "true"
+      # - MAILER_HOST: smtp.example.com
+      # - MAILER_PORT: 587
+      # - MAILER_SECURE: "false"
+      # - MAILER_AUTH_USER: noreply@example.com
+      # - MAILER_AUTH_PASSWORD: yourpass
+      # Registration
+      - USER_REGISTRATION_ENABLED="false"
+    volumes:
+      - joplin-data:/data
+      - ${VOLUME_PATH}/joplin/data:/data
+      - ${VOLUME_PATH}/joplin/config:/config
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:22300/api/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    networks:
+      - cloud-network
+    ports:
+      - 3000:3000
+      - 3001:3001
