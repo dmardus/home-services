@@ -1,20 +1,37 @@
-# AI, Search and RAG Services
+# AI Stack
 # - Ollama
-# - Open WebUI
-# - n8n
 # - SearXNG
 # - PostgreSQL
 # - Qdrant
-# - ChromaDB
-# - RAG Worker
+# - Redis
+# - n8n
+# - Open WebUI
+# - LobeChat
+# - LibreChat (server + client)
+# - Watchtower
+#
+# Usage: docker compose up -d --force-recreate --remove-orphans --pull always
 
 name: ai-stack
 
 networks:
   ai-network:
-    driver: bridge
+    external: true
+  # Connect to Observability
+  # observability-network:
+  #   external: true
+
+# Named volumes for databases
+volumes:
+  postgres-data:
+  qdrant-data:
+  redis-data:
+  mongo-data:
 
 services:
+  ## -------------------------
+  ## Ollama (Local LLM Server)
+  ## -------------------------
   ollama:
     image: ollama/ollama:latest
     container_name: ai-ollama
@@ -27,19 +44,135 @@ services:
       - ENABLE_IMAGE_GENERATION=${ENABLE_IMAGE_GENERATION}
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-    # If you would like to use external storage
     volumes:
-      - ${VOLUME_PATH}/ollama:/root/.ollama
+      - ./ollama:/root/.ollama
     networks:
       - ai-network
+    #  - observability-network
     ports:
-      - "11434:11434"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - ${OLLAMA_PORT:-11434}:11434
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
 
+  ## -------------------------
+  ## SearXNG (Free Web Search)
+  ## -------------------------
+  searxng:
+    image: searxng/searxng:latest
+    container_name: ai-searxng
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    volumes:
+      - ./searxng:/etc/searxng
+    networks:
+      - ai-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
+
+  ## -------------------------
+  ## PostgreSQL (DB)
+  ## -------------------------
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: ai-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DB_STORAGE_TYPE=SSD
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      # On WSL it should be folder inside WSL, not mounted folder form NTFS Windows
+      - ~/docker-data/ai-stack/postgres:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - ai-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
+
+  ## -------------------------
+  ## Qdrant (Vector DB)
+  ## -------------------------
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ai-qdrant
+    restart: always
+    networks:
+      - ai-network
+    #  - observability-network
+    ports:
+      - ${QDRANT_PORT:-6333}:6333
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
+
+  ## -------------------------
+  ## Redis (Cache)
+  ## -------------------------
+  redis:
+    image: redis:latest
+    container_name: ai-redis
+    restart: always
+    volumes:
+      - redis-data:/data
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - ai-network
+      - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
+
+  ## -------------------------
+  ## MongoDB (Required by LibreChat)
+  ## -------------------------
+  mongo:
+    image: mongo:latest
+    container_name: ai-mongo
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - ai-network
+      - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
+
+  ## -------------------------
+  ## n8n (AI Workflow)
+  ## -------------------------
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: ai-n8n
+    restart: always
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - N8N_HOST=n8n.local
+      - WEBHOOK_TUNNEL_URL=http://n8n.local:5678
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+    volumes:
+      - ./n8n:/home/node/.n8n
+      - ./data/support_kb:/data/support_kb
+      - ./data/finance_kb:/data/finance_kb
+    networks:
+      - ai-network
+    #  - observability-network
+    ports:
+      - ${N8N_PORT:-5678}:5678
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
+
+  ## -------------------------
+  ## Open WebUI (Web UI for AI)
+  ## -------------------------
   open-webui:
     depends_on:
       - ollama
@@ -55,114 +188,89 @@ services:
       - RAG_WEB_SEARCH_RESULT_COUNT=${RAG_WEB_SEARCH_RESULT_COUNT}
       - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=${RAG_WEB_SEARCH_CONCURRENT_REQUESTS}
       - SEARXNG_QUERY_URL=${SEARXNG_QUERY_URL}
-    # If you would like to use external storage
     volumes:
-      - ${VOLUME_PATH}/open-webui:/app/backend/data
+      - ./open-webui:/app/backend/data
     networks:
       - ai-network
+    #  - observability-network
     ports:
-      - "8000:8080"
+      - ${OPENWEBUI_PORT:-8181}:8080
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
     extra_hosts:
       - host.docker.internal:host-gateway
 
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: ai-n8n
+  ## -------------------------
+  ## LobeChat
+  ## -------------------------
+  lobe-chat:
+    image: lobehub/lobe-chat
+    container_name: ai-lobe-chat
     restart: always
     environment:
-      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-      - N8N_HOST=n8n.local
-      - WEBHOOK_TUNNEL_URL=http://n8n.local:5678
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
-    volumes:
-      - ${VOLUME_PATH}/n8n:/home/node/.n8n
-      - ${VOLUME_PATH}/data/support_kb:/data/support_kb
-      - ${VOLUME_PATH}/data/finance_kb:/data/finance_kb
+      OPENAI_API_KEY: sk-xxxx
+      OPENAI_PROXY_URL: ${OLLAMA_BASE_URL}
+      ACCESS_CODE: lobe66
     networks:
       - ai-network
+      - observability-network
     ports:
-      - "5678:5678"
+      - ${LOBECHAT_PORT:-3210}:3210
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
 
-  searxng:
+  ## -------------------------
+  ## LibreChat (Advanced AI UI)
+  ## -------------------------
+  librechat:
+    image: ghcr.io/danny-avila/librechat-dev:latest
+    container_name: ai-librechat
+    restart: always
     depends_on:
-      - ollama
-      - open-webui
-    image: searxng/searxng:latest
-    container_name: ai-searxng
-    restart: always
+      - postgres
+      - redis
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-    # If you would like to use external storage
-    volumes:
-      - ${VOLUME_PATH}/searxng:/etc/searxng
-    networks:
-      - ai-network
-    ports:
-      - "8888:8080"
-
-  postgres:
-    image: postgres:latest
-    container_name: ai-postgres
-    restart: always
-    environment:
+      - NODE_ENV=production
+      - CONFIG_PATH=/app/config/config.json
+      - MONGO_URI=mongodb://mongo:27017/librechat
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - DB_STORAGE_TYPE=SSD
-      - PGDATA=/var/lib/postgresql/data
+      - POSTGRES_DB=${POSTGRES_DB_LIBRECHAT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_URL=${OLLAMA_BASE_URL}
+      - DEFAULT_MODEL=${LIBRECHAT_DEFAULT_MODEL}
+      - QDRANT_URL=${QDRANT_URL}
+      - SEARXNG_URL=${SEARXNG_QUERY_URL}
+      - WEBSEARCH_ENABLED=true
+      - WEBSEARCH_PROVIDER=searxng
+      - WEBSEARCH_ENDPOINT=${SEARXNG_QUERY_URL}
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
-      - ${VOLUME_PATH}/postgres:/var/lib/postgresql/data
+      - ./librechat/config/config.json:/app/config/config.json
     networks:
       - ai-network
+      - observability-network
     ports:
-      - "5432:5432"
+      - ${LIBRECHAT_PORT:-3080}:3080
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ai"
 
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: ai-qdrant
+  ## -------------------------
+  ## Watchtower (Auto-updates)
+  ## -------------------------
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: ai-watchtower
     restart: always
-    networks:
-      - ai-network
-    ports:
-      - "6333:6333"
-
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: ai-chromadb
-    restart: always
-    environment:
-      - IS_PERSISTENT=${IS_PERSISTENT}
-    # If you would like to use external storage
+    command: >
+      --scope ai
+      --cleanup
+      --schedule "0 0 3 * * 3" # every Wednesday 03:00
     volumes:
-      - ${VOLUME_PATH}/data/chroma:/chroma/chroma
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - ai-network
-    ports:
-      - "8005:8000"
-
-  rag-worker:
-    depends_on:
-      - chromadb
-    build: ${VOLUME_PATH}/rag-worker
-    container_name: ai-rag-worker
-    restart: always
-    environment:
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}  # Access Ollama from WSL
-      - EMBED_MODEL_NAME=${EMBED_MODEL_NAME} # Embedding model
-    # If you would like to use external storage
-    volumes:
-      - ${VOLUME_PATH}/rag-worker:/app
-      - ${VOLUME_PATH}/data:/app/data
-    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8001"]
-    networks:
-      - ai-network
-    ports:
-      - "8001:8001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3

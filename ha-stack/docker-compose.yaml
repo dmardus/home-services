@@ -1,0 +1,66 @@
+# HA Stack
+# - Whisper
+# - Piper
+# - Watchtower
+
+name: ha-stack
+
+networks:
+  ha-network:
+    external: true
+
+services:
+  ## -------------------------
+  ## Whisper
+  ## -------------------------
+  whisper:
+    image: rhasspy/wyoming-whisper
+    container_name: ha-whisper
+    restart: always
+    # Only use GPU runtime if you have NVIDIA GPU
+    runtime: nvidia
+    command: --model tiny-int8 --language en
+    volumes:
+      - ./whisper-data:/data
+    networks:
+      - ha-network
+    ports:
+      - ${WHISPER_PORT:-10300}:10300
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ha"
+
+  ## -------------------------
+  ## Piper
+  ## -------------------------
+  piper:
+    image: rhasspy/wyoming-piper
+    container_name: ha-piper
+    restart: always
+    # Only use GPU runtime if you have NVIDIA GPU
+    runtime: nvidia
+    command: --voice en_US-lessac-medium
+    volumes:
+      - ./piper-data:/data
+    networks:
+      - ha-network
+    ports:
+      - ${PIPER_PORT:-10200}:10200
+    labels:
+      - "com.centurylinklabs.watchtower.scope=ha"
+
+  ## -------------------------
+  ## Watchtower (Auto-updates)
+  ## -------------------------
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: ha-watchtower
+    restart: always
+    command: >
+      --scope ha
+      --monitor-only
+      --cleanup
+      --schedule "0 0 3 * * 3" # every Wednesday 03:00
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ha-network

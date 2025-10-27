@@ -1,0 +1,227 @@
+# Observability Stack
+# - Uptime Kuma
+# - Beszel Hub & Agent
+# - Loki
+# - Promtail
+# - Prometheus
+# - cAdvisor
+# - Node Exporter
+# - Grafana
+# - Watchtower
+#
+# Usage: docker compose up -d --force-recreate --remove-orphans --pull always
+
+name: observability-stack
+
+networks:
+  observability-network:
+    external: true
+
+volumes:
+  grafana-storage:
+
+services:
+  ## ----------------------------------------
+  ## Start Simple Observability Stack Services
+  ## ----------------------------------------
+
+  ## -------------------------
+  ## Uptime Kuma (Service monitoring)
+  ## -------------------------
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: observability-uptime-kuma
+    restart: always
+    volumes:
+      - ./uptime_kuma:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - observability-network
+    ports:
+      - ${UPTIMEKUMA_PORT:-3001}:3001
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Beszel Hub
+  ## -------------------------
+  beszel:
+    image: henrygd/beszel
+    container_name: observability-beszel
+    restart: always
+    volumes:
+      - ./beszel_data:/beszel_data
+      - ./beszel_socket:/beszel_socket
+    networks:
+      - observability-network
+    ports:
+      - ${BESZEL_PORT:-8090}:8090
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Beszel Agent
+  ## -------------------------
+  beszel-agent:
+    image: henrygd/beszel-agent:latest
+    container_name: observability-beszel-agent
+    restart: always
+    environment:
+      LISTEN: /beszel_socket/beszel.sock
+      HUB_URL: http://localhost:${BESZEL_PORT:-8090}
+      PORT: 45876
+      TOKEN: 1c21-291f3eab2b-2922-1a760d118
+      KEY: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA+TxY09Q+sy+0i3VJqMwelWw+5hGcyBy0+92gADBSRW"
+    volumes:
+      - ./beszel_agent_data:/var/lib/beszel-agent
+      - ./beszel_socket:/beszel_socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    network_mode: host
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## ----------------------------------------
+  ## Add Metrics & Logs Depth
+  ## ----------------------------------------
+
+  ## -------------------------
+  ## Loki (Logs database)
+  ## -------------------------
+  loki:
+    image: grafana/loki:latest
+    container_name: observability-loki
+    restart: always
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./loki:/loki
+      - ./config/loki.yml:/etc/loki/loki-config.yml:ro
+    networks:
+      - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Promtail (Log collector)
+  ## -------------------------
+  promtail:
+    image: grafana/promtail:latest
+    container_name: observability-promtail
+    restart: always
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/promtail.yml:/etc/promtail/config.yml:ro
+    networks:
+      - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Prometheus (Metrics DB)
+  ## -------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: observability-prometheus
+    restart: always
+    volumes:
+      - ./prometheus:/prometheus
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    networks:
+      - observability-network
+    ports:
+      - ${PROMETHEUS_PORT:-9090}:9090
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Node Exporter (Host metrics)
+  ## -------------------------
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: observability-node-exporter
+    restart: always
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+    network_mode: host
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## cAdvisor (Docker metrics)
+  ## -------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: observability-cadvisor
+    restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Logporter (Docker logs to Prometheus)
+  ## -------------------------
+  logporter:
+    image: lifailon/logporter:latest
+    container_name: observability-logporter
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Grafana (Metrics & Logs)
+  ## -------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: observability-grafana
+    restart: always
+    environment:
+      - GF_METRICS_ENABLED=true
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - observability-network
+    ports:
+      - ${GRAFANA_PORT:-3000}:3000
+    labels:
+      - "com.centurylinklabs.watchtower.observability=observability"
+
+  ## -------------------------
+  ## Watchtower (Auto-updates)
+  ## -------------------------
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: observability-watchtower
+    restart: always
+    command: >
+      --scope observability
+      --cleanup
+      --schedule "0 0 1,15 * *" # 1st and 15th of the month 03:00
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - observability-network
