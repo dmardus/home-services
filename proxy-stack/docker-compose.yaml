@@ -1,0 +1,67 @@
+# Proxy Stack
+# - Traefik
+# - Watchtower
+
+name: proxy-stack
+
+networks:
+  proxy-network:
+    external: true
+
+services:
+  ## -------------------------
+  ## Traefik (Reverse Proxy)
+  ## -------------------------
+  traefik:
+    image: traefik:latest
+    container_name: proxy-traefik
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - TRAEFIK_DASHBOARD_CREDENTIALS=${TRAEFIK_DASHBOARD_CREDENTIALS}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik.yml:/traefik.yml:ro
+      - ./data/certs/:/certs/:rw
+      - ./data/config.yml:/config.yml:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - proxy-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=proxy"
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+
+  ## -------------------------
+  ## Watchtower (Auto-updates)
+  ## -------------------------
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: proxy-watchtower
+    restart: always
+    command: >
+      --scope proxy
+      --monitor-only
+      --cleanup
+      --schedule "0 0 5 * * 1" # every Monday 05:00
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - proxy-network

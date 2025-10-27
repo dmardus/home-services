@@ -1,0 +1,210 @@
+# Cloud (photo, files, notes) Stack
+# - PostgreSQL
+# - Redis
+# - NextCloud
+# - Immich
+# - Trillium, BookStack, Outline, Siyuan as Note/Wiki later
+#
+# Usage: docker compose up -d --force-recreate --remove-orphans --pull always
+
+name: cloud-stack
+
+networks:
+  cloud-network:
+    external: true
+  # Connect to Observability
+  # observability-network:
+  #   external: true
+
+# Named volumes for databases
+volumes:
+  postgres-data:
+  redis-data:
+
+services:
+  # ---------- DATA STORES ----------
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: cloud-postgres
+    restart: always
+    environment:
+      - TZ=${GENERIC_TIMEZONE:-UTC}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_STORAGE_TYPE=SSD
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - PGDATA=/var/lib/postgresql/data
+      # POSTGRES_DB not set on purpose; we create 3 DBs via init SQL
+    volumes:
+      # Named volume for database (managed via SQL dumps)
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/initdb:/docker-entrypoint-initdb.d:ro   # place 01-init.sql here (see below)
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - cloud-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=cloud"
+
+  redis:
+    image: redis:latest
+    container_name: cloud-redis
+    restart: always
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 256mb --maxmemory-policy allkeys-lru
+    environment:
+      - TZ=${GENERIC_TIMEZONE:-UTC}
+    volumes:
+      - redis-data:/data
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cloud-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=cloud"
+
+  # ---------- NEXTCLOUD ----------
+  nextcloud:
+    image: lscr.io/linuxserver/nextcloud:latest
+    container_name: cloud-nextcloud
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=${GENERIC_TIMEZONE:-UTC}
+      # DB
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nextcloud_db
+      - POSTGRES_USER=${NC_DB_USER}
+      - POSTGRES_PASSWORD=${NC_DB_PASS}
+      # Redis cache/locking (you’ll still enable memcache in config.php post-install)
+      - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6379
+      # Performance tuning
+      - PHP_MEMORY_LIMIT=${NC_PHP_MEMORY_LIMIT:-1024M}
+      - PHP_UPLOAD_LIMIT=${NC_UPLOAD_LIMIT:-4G}
+      - NEXTCLOUD_INIT_HTACCESS=true
+      # Admin user - auto-create during first run
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:-admin}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD}
+      # Auto-configure database
+      - NEXTCLOUD_DATABASE_TYPE=pgsql
+    volumes:
+      # On WSL it should be folder inside WSL, not mounted folder form NTFS Windows
+      - ~/docker-data/cloud-stack/nextcloud/config:/config
+      - ~/docker-data/cloud-stack/nextcloud/data:/data
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/80 && echo -e 'GET /status.php HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q 'HTTP/1.1 200'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    ports:
+      - ${NEXTCLOUD_PORT:-8080}:80
+    networks:
+      - cloud-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=cloud"
+
+  # ---------- IMMICH ----------
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:release
+    container_name: cloud-immich-server
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ=${GENERIC_TIMEZONE:-UTC}
+      # Database
+      - DB_HOSTNAME=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=${IM_DB_USER}
+      - DB_PASSWORD=${IM_DB_PASS}
+      - DB_DATABASE_NAME=immich_db
+      # Redis
+      - REDIS_HOSTNAME=redis
+      - REDIS_PORT=6379
+      # Upload/media
+      - IMMICH_MEDIA_LOCATION=/usr/src/app/upload
+      - IMMICH_LOG_LEVEL=${IMMICH_LOG_LEVEL:-log}
+      # Optional auth & public URL
+      - IMMICH_SERVER_URL=${IMMICH_SERVER_URL}
+    volumes:
+      - ./immich-uploads:/usr/src/app/upload
+      - ./immich-thumbs:/usr/src/app/thumbs
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      disable: false
+    ports:
+      - ${IMMICH_PORT:-2283}:2283
+    networks:
+      - cloud-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=cloud"
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    container_name: cloud-immich-ml
+    restart: always
+    # Only use GPU runtime if you have NVIDIA GPU
+    runtime: nvidia
+    environment:
+      # Only if using NVIDIA GPU
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TZ=${GENERIC_TIMEZONE}
+      - MACHINE_LEARNING_HOST=0.0.0.0
+      - MACHINE_LEARNING_PORT=3003
+      - MACHINE_LEARNING_WORKERS=${IMMICH_ML_WORKERS:-1}
+      - MACHINE_LEARNING_WORKER_TIMEOUT=${IMMICH_ML_TIMEOUT:-120}
+    volumes:
+      - ./immich/model-cache:/cache
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      disable: false
+    networks:
+      - cloud-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=cloud"
+
+  ## -------------------------
+  ## Watchtower (Auto-updates)
+  ## -------------------------
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: cloud-watchtower
+    restart: always
+    command: >
+      --scope cloud
+      --cleanup
+      --schedule "0 0 3 * * 3" # every Wednesday 03:00
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - cloud-network

@@ -1,0 +1,96 @@
+# Media Services
+# - Plex
+# - Jellyfin
+# - Watchtower
+#
+# Usage: docker compose up -d --force-recreate --remove-orphans --pull always
+
+name: media-stack
+
+networks:
+  media-network:
+    external: true
+  # Connect to Observability
+  # observability-network:
+  #   external: true
+
+# Named volumes for persistent data
+volumes:
+  plex-config:
+  jellyfin-config:
+  transcode:
+
+services:
+  ## -------------------------
+  ## Pex (Media Server)
+  ## -------------------------
+  plex:
+    image: linuxserver/plex:latest
+    container_name: media-plex
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - PUID=1000
+      - PGID=1000
+      - VERSION=latest
+      #- PLEX_CLAIM=${PLEX_CLAIM}
+    volumes:
+      - plex-config:/config
+      - transcode:/transcode
+      - ${MEDIA_PATH}/movies:/data/movies:ro
+      - ${MEDIA_PATH}/demos:/data/demos:ro
+      - ${MEDIA_PATH}/photos:/data/photos:ro
+      - ${MEDIA_PATH}/tv-shows:/data/tv-shows:ro
+    ports:
+      - ${PLEX_PORT:-32400}:32400
+    networks:
+      - media-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=media"
+
+  ## -------------------------
+  ## Jellyfin (Media Server)
+  ## -------------------------
+  jellyfin:
+    image: linuxserver/jellyfin:latest
+    container_name: media-jellyfin
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - jellyfin-config:/config
+      - transcode:/transcode
+      - ${MEDIA_PATH}/movies:/data/movies:ro
+      - ${MEDIA_PATH}/demos:/data/demos:ro
+      - ${MEDIA_PATH}/photos:/data/photos:ro
+      - ${MEDIA_PATH}/tv-shows:/data/tv-shows:ro
+    ports:
+      - ${JELLYFIN_PORT:-8096}:8096
+    networks:
+      - media-network
+    #  - observability-network
+    labels:
+      - "com.centurylinklabs.watchtower.scope=media"
+
+  ## -------------------------
+  ## Watchtower (Auto-updates)
+  ## -------------------------
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: media-watchtower
+    restart: always
+    command: >
+      --scope media
+      --cleanup
+      --schedule "0 0 2 * * 2" # every Tuesday 2AM
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - media-network

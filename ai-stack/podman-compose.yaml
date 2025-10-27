@@ -1,0 +1,179 @@
+# AI Stack - Podman Version
+# - Ollama
+# - Open WebUI
+# - n8n
+# - SearXNG
+# - PostgreSQL
+# - Qdrant
+#
+# Usage: podman-compose pull && podman-compose up -d --force-recreate --remove-orphans
+
+name: ai-stack
+
+networks:
+  ai-network:
+    external: true
+  observability-network:
+    external: true
+
+# Named volumes for databases
+volumes:
+  postgres-data:
+    driver: local
+  qdrant-data:
+    driver: local
+
+services:
+  ## -------------------------
+  ## Ollama (Local LLM Server)
+  ## -------------------------
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: ai-ollama
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE}
+      - ENABLE_IMAGE_GENERATION=${ENABLE_IMAGE_GENERATION}
+    volumes:
+      # WSL folder for better performance and easy access to models
+      - ./ollama:/root/.ollama
+    networks:
+      - ai-network
+      - observability-network
+    ports:
+      - ${OLLAMA_PORT:-11434}:11434
+    labels:
+      - "io.containers.autoupdate=registry"
+    # GPU access for Ollama
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+    security_opt:
+      - label=disable
+
+  ## -------------------------
+  ## Open WebUI (Web UI for AI)
+  ## -------------------------
+  open-webui:
+    depends_on:
+      - ollama
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: ai-open-webui
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - ENABLE_RAG_WEBSEARCH=${ENABLE_RAG_WEBSEARCH}
+      - RAG_WEB_SEARCH_ENGINE=${RAG_WEB_SEARCH_ENGINE}
+      - RAG_WEB_SEARCH_RESULT_COUNT=${RAG_WEB_SEARCH_RESULT_COUNT}
+      - RAG_WEB_SEARCH_CONCURRENT_REQUESTS=${RAG_WEB_SEARCH_CONCURRENT_REQUESTS}
+      - SEARXNG_QUERY_URL=${SEARXNG_QUERY_URL}
+    volumes:
+      # WSL folder for better performance and easy access to data
+      - ./open-webui:/app/backend/data
+    networks:
+      - ai-network
+      - observability-network
+    ports:
+      - ${OPENWEBUI_PORT:-8181}:8080
+    labels:
+      - "io.containers.autoupdate=registry"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  ## -------------------------
+  ## n8n (AI Workflow)
+  ## -------------------------
+  n8n:
+    image: docker.io/n8nio/n8n:latest
+    container_name: ai-n8n
+    restart: always
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - N8N_HOST=n8n.local
+      - WEBHOOK_TUNNEL_URL=http://n8n.local:5678
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      # WSL folder for workflows
+      - ./n8n:/home/node/.n8n
+      - ./n8n/data/support_kb:/data/support_kb
+      - ./n8n/data/finance_kb:/data/finance_kb
+    networks:
+      - ai-network
+      - observability-network
+    ports:
+      - ${N8N_PORT:-5678}:5678
+    labels:
+      - "io.containers.autoupdate=registry"
+
+  ## -------------------------
+  ## SearXNG (Free Web Search)
+  ## -------------------------
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: ai-searxng
+    restart: always
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    volumes:
+      # WSL folder for search config
+      - ./searxng:/etc/searxng
+    networks:
+      - ai-network
+      - observability-network
+    labels:
+      - "io.containers.autoupdate=registry"
+
+  ## -------------------------
+  ## PostgreSQL (DB)
+  ## -------------------------
+  postgres:
+    image: docker.io/pgvector/pgvector:pg17
+    container_name: ai-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DB_STORAGE_TYPE=SSD
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      # Named volume for database (managed via SQL dumps)
+      - postgres-data:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+      - label=disable
+    networks:
+      - ai-network
+      - observability-network
+    labels:
+      - "io.containers.autoupdate=registry"
+
+  ## -------------------------
+  ## Qdrant (Vector DB)
+  ## -------------------------
+  qdrant:
+    image: docker.io/qdrant/qdrant:latest
+    container_name: ai-qdrant
+    restart: always
+    volumes:
+      # Named volume for vector database
+      - qdrant-data:/qdrant/storage
+    networks:
+      - ai-network
+      - observability-network
+    ports:
+      - ${QDRANT_PORT:-6333}:6333
+    labels:
+      - "io.containers.autoupdate=registry"
