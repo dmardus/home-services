@@ -3,10 +3,10 @@
 # - Piper
 # - Watchtower
 
-name: ha-stack
+name: wyoming-stack
 
 networks:
-  ha-network:
+  wyoming-network:
     external: true
 
 services:
@@ -15,7 +15,7 @@ services:
   ## -------------------------
   whisper:
     image: rhasspy/wyoming-whisper
-    container_name: ha-whisper
+    container_name: wyoming-whisper
     restart: always
     # Only use GPU runtime if you have NVIDIA GPU
     runtime: nvidia
@@ -23,7 +23,7 @@ services:
     volumes:
       - ./whisper-data:/data
     networks:
-      - ha-network
+      - wyoming-network
     ports:
       - ${WHISPER_PORT:-10300}:10300
     labels:
@@ -34,7 +34,7 @@ services:
   ## -------------------------
   piper:
     image: rhasspy/wyoming-piper
-    container_name: ha-piper
+    container_name: wyoming-piper
     restart: always
     # Only use GPU runtime if you have NVIDIA GPU
     runtime: nvidia
@@ -42,7 +42,7 @@ services:
     volumes:
       - ./piper-data:/data
     networks:
-      - ha-network
+      - wyoming-network
     ports:
       - ${PIPER_PORT:-10200}:10200
     labels:
@@ -63,4 +63,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - ha-network
+      - wyoming-network
