@@ -1,0 +1,25 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-5.7.1
+#
+# Usage:
+#   podman kube play cloudflare-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: cloudflare-pod
+  name: cloudflare-pod
+spec:
+  containers:
+  - args:
+    - tunnel
+    - --no-autoupdate
+    - run
+    - --token
+    - your_tunnel_token_here
+    image: docker.io/cloudflare/cloudflared:latest
+    name: cloudflare
+    securityContext: {}

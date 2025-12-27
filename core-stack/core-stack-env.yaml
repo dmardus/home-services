@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: core-stack-env
-  namespace: core-stack
-data:
-  TUNNEL_TOKEN: "<paste value from .env here>"
