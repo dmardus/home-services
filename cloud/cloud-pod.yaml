@@ -1,3 +1,16 @@
+# Cloud (photo, files, notes) Pod
+# - PostgreSQL
+# - Redis
+# - Immich Server
+# - Immich Machine Learning, pick up th necessary image:
+#     release: Default CPU-only version
+#     release-cuda: For NVIDIA GPUs (uses onnxruntime-gpu)
+#     release-rocm: For AMD GPUs
+#     release-armnn: For ARM Mali GPUs (e.g., Raspberry Pi with GPU support)
+#     release-openvino: For Intel CPUs and integrated graphics
+#     release-rknn: For Rockchip NPUs (e.g., RK3588)
+# - NextCloud, Trillium, BookStack, Outline, Siyuan as Note/Wiki later
+#
 # Usage:
 #   podman kube play cloud-pod.yaml
 

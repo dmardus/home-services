@@ -1,10 +1,9 @@
-# Save the output of this file and use kubectl create -f to import
-# it into Kubernetes.
-#
-# Created with podman-5.7.1
+# Cloudflare Pod Pod
+# - cloudflare
 #
 # Usage:
 #   podman kube play cloudflare-pod.yaml
+#   podman kube apply cloudflare-pod.yaml
 
 apiVersion: v1
 kind: Pod

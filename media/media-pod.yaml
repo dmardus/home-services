@@ -1,3 +1,9 @@
+# Media Pod
+# - Plex
+# - Jellyfin
+#
+# Usage:
+#   podman kube play media-pod.yaml
 # Usage:
 #   podman kube play media-pod.yaml
 

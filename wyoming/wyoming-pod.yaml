@@ -1,3 +1,7 @@
+# Wyoming Pod
+# - Whisper
+# - Piper
+#
 # Usage:
 #   podman kube play wyoming-pod.yaml
 
