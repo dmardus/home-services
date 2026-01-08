@@ -18,6 +18,8 @@ spec:
     # -----------------------------------------------------
     - name: plex
       image: docker.io/linuxserver/plex:latest
+      annotations:
+        io.kubernetes.cri-o.Devices: '["0"]'
       env:
         - name: NVIDIA_VISIBLE_DEVICES
           value: "all"
@@ -52,15 +54,14 @@ spec:
         - containerPort: 32400
           hostPort: 32400
       restartPolicy: Always
-      resources:
-        limits:
-          nvidia.com/gpu: "1"
 
     # -----------------------------------------------------
     # Jellyfin
     # -----------------------------------------------------
     - name: jellyfin
       image: docker.io/linuxserver/jellyfin:latest
+      annotations:
+        io.kubernetes.cri-o.Devices: '["0"]'
       env:
         - name: NVIDIA_VISIBLE_DEVICES
           value: "all"
@@ -91,9 +92,6 @@ spec:
         - containerPort: 8096
           hostPort: 8096
       restartPolicy: Always
-      resources:
-        limits:
-          nvidia.com/gpu: "1"
 
   # -------------------------------------------------------
   # Volumes
