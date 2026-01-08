@@ -6,7 +6,7 @@ set -euo pipefail
 POD_NAME="cloud-pod"
 YAML="cloud-pod.yaml"
 IMAGE_REDIS="docker.io/library/redis:latest"
-IMAGE_IMMICH_ML="ghcr.io/immich-app/immich-machine-learning:release"
+IMAGE_IMMICH_ML="ghcr.io/immich-app/immich-machine-learning:release-openvino"
 IMAGE_IMMICH_SERVER="ghcr.io/immich-app/immich-server:release"
 
 echo "Pulling latest images..."

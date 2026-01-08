@@ -4,10 +4,10 @@
 # - Immich Server
 # - Immich Machine Learning, pick up th necessary image:
 #     release: Default CPU-only version
-#     release-cuda: For NVIDIA GPUs (uses onnxruntime-gpu)
+#     release-cuda: For NVIDIA GPUs (uses onnxruntime-gpu, can be unstable)
 #     release-rocm: For AMD GPUs
 #     release-armnn: For ARM Mali GPUs (e.g., Raspberry Pi with GPU support)
-#     release-openvino: For Intel CPUs and integrated graphics
+#     release-openvino: For Intel CPUs and integrated graphics (fast, stable)
 #     release-rknn: For Rockchip NPUs (e.g., RK3588)
 # - NextCloud, Trillium, BookStack, Outline, Siyuan as Note/Wiki later
 #
@@ -94,7 +94,7 @@ spec:
     # Immich Machine Learning (GPU)
     # -----------------------------------------------------
     - name: immich-machine-learning
-      image: ghcr.io/immich-app/immich-machine-learning:release-cuda
+      image: ghcr.io/immich-app/immich-machine-learning:release-openvino
       annotations:
         io.kubernetes.cri-o.Devices: '["0"]'
       env:
