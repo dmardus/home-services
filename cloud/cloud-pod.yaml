@@ -80,8 +80,10 @@ spec:
     # -----------------------------------------------------
     # Immich Machine Learning (GPU)
     # -----------------------------------------------------
-    - name: immich-ml
-      image: ghcr.io/immich-app/immich-machine-learning:release
+    - name: immich-machine-learning
+      image: ghcr.io/immich-app/immich-machine-learning:release-cuda
+      annotations:
+        io.kubernetes.cri-o.Devices: '["0"]'
       env:
         - name: MACHINE_LEARNING_HOST
           value: "0.0.0.0"
@@ -93,13 +95,9 @@ spec:
           value: "120"
       ports:
         - containerPort: 3003
-          hostPort: 3003
       volumeMounts:
         - name: ml-cache
           mountPath: /cache
-      resources:
-        limits:
-          nvidia.com/gpu: "1"
       restartPolicy: Always
 
   # -------------------------------------------------------
@@ -107,7 +105,7 @@ spec:
   # -------------------------------------------------------
   volumes:
 
-    # Relative paths (config/state)
+    # Relative paths (config/state/cache)
     - name: postgres-data
       hostPath:
         path: ./postgres-data
@@ -123,6 +121,11 @@ spec:
         path: ./postgres-initdb
         type: DirectoryOrCreate
 
+    - name: ml-cache
+      hostPath:
+        path: ./model-cache
+        type: DirectoryOrCreate
+
     # Absolute paths (actual media/content)
     - name: immich-uploads
       hostPath:
@@ -132,11 +135,6 @@ spec:
     - name: immich-thumbs
       hostPath:
         path: /mnt/storage/immich/thumbs
-        type: Directory
-
-    - name: ml-cache
-      hostPath:
-        path: /mnt/storage/immich/model-cache
         type: Directory
 
     - name: photo-archive
