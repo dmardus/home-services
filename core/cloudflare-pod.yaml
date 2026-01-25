@@ -1,0 +1,24 @@
+# Cloudflare Pod Pod
+# - cloudflare
+#
+# Usage:
+#   podman kube play cloudflare-pod.yaml
+#   podman kube apply cloudflare-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: cloudflare-pod
+  name: cloudflare-pod
+spec:
+  containers:
+  - args:
+    - tunnel
+    - --no-autoupdate
+    - run
+    - --token
+    - your_tunnel_token_here
+    image: docker.io/cloudflare/cloudflared:latest
+    name: cloudflare
+    securityContext: {}

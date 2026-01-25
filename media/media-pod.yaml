@@ -1,0 +1,133 @@
+# Media Pod
+# - Plex
+# - Jellyfin
+#
+# Usage:
+#   podman kube play media-pod.yaml
+# Usage:
+#   podman kube play media-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: media-pod
+spec:
+  containers:
+    # -----------------------------------------------------
+    # Plex
+    # -----------------------------------------------------
+    - name: plex
+      image: docker.io/linuxserver/plex:latest
+      annotations:
+        io.kubernetes.cri-o.Devices: '["0"]'
+      env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "all"
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: VERSION
+          value: "latest"
+        - name: PLEX_CLAIM
+          value: ""  # Optional: Claim token from https://plex.tv/claim
+      volumeMounts:
+        - name: plex-config
+          mountPath: /config
+        - name: transcode
+          mountPath: /transcode
+        - name: movies
+          mountPath: /data/movies
+          readOnly: true
+        - name: demos
+          mountPath: /data/demos
+          readOnly: true
+        - name: photos
+          mountPath: /data/photos
+          readOnly: true
+        - name: tv-shows
+          mountPath: /data/tv-shows
+          readOnly: true
+      ports:
+        - containerPort: 32400
+          hostPort: 32400
+      restartPolicy: Always
+
+    # -----------------------------------------------------
+    # Jellyfin
+    # -----------------------------------------------------
+    - name: jellyfin
+      image: docker.io/linuxserver/jellyfin:latest
+      annotations:
+        io.kubernetes.cri-o.Devices: '["0"]'
+      env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "all"
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+      volumeMounts:
+        - name: jellyfin-config
+          mountPath: /config
+        - name: transcode
+          mountPath: /transcode
+        - name: movies
+          mountPath: /data/movies
+          readOnly: true
+        - name: demos
+          mountPath: /data/demos
+          readOnly: true
+        - name: photos
+          mountPath: /data/photos
+          readOnly: true
+        - name: tv-shows
+          mountPath: /data/tv-shows
+          readOnly: true
+      ports:
+        - containerPort: 8096
+          hostPort: 8096
+      restartPolicy: Always
+
+  # -------------------------------------------------------
+  # Volumes
+  # -------------------------------------------------------
+  volumes:
+    - name: plex-config
+      hostPath:
+        path: ./plex-config
+        type: DirectoryOrCreate
+
+    - name: jellyfin-config
+      hostPath:
+        path: ./jellyfin-config
+        type: DirectoryOrCreate
+
+    - name: transcode
+      hostPath:
+        path: ./transcode
+        type: DirectoryOrCreate
+
+    - name: movies
+      hostPath:
+        path: /mnt/storage/video/movies
+        type: Directory
+
+    - name: demos
+      hostPath:
+        path: /mnt/storage/video/demos
+        type: Directory
+
+    - name: photos
+      hostPath:
+        path: /mnt/storage/video/photos
+        type: Directory
+
+    - name: tv-shows
+      hostPath:
+        path: /mnt/storage/video/tv-shows
+        type: Directory

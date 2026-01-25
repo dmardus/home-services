@@ -1,0 +1,58 @@
+# Wyoming Pod
+# - Whisper
+# - Piper
+#
+# Usage:
+#   podman kube play wyoming-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wyoming-pod
+spec:
+  containers:
+    ## -------------------------
+    ## Wyoming Whisper
+    ## -------------------------
+    - name: wyoming-whisper
+      image: rhasspy/wyoming-whisper
+      annotations:
+        io.kubernetes.cri-o.Devices: '["0"]'
+      args: ["--model", "tiny-int8", "--language", "en"]
+      volumeMounts:
+        - name: whisper-data
+          mountPath: /data
+      ports:
+        - containerPort: 10300
+          hostPort: 10300
+      restartPolicy: Always
+
+    ## -------------------------
+    ## Wyoming Piper
+    ## -------------------------
+    - name: wyoming-piper
+      image: rhasspy/wyoming-piper
+      annotations:
+        io.kubernetes.cri-o.Devices: '["0"]'
+      args: ["--voice", "en_US-lessac-medium"]
+      volumeMounts:
+        - name: piper-data
+          mountPath: /data
+      ports:
+        - containerPort: 10200
+          hostPort: 10200
+      restartPolicy: Always
+
+  # -------------------------------------------------------
+  # Volumes
+  # -------------------------------------------------------
+  volumes:
+    - name: whisper-data
+      hostPath:
+        path: ./whisper-data
+        type: DirectoryOrCreate
+
+    - name: piper-data
+      hostPath:
+        path: ./piper-data
+        type: DirectoryOrCreate
