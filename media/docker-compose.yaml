@@ -1,7 +1,6 @@
 # Media Stack
 # - Plex
 # - Jellyfin
-# - Watchtower
 #
 # Usage: docker compose up -d --force-recreate --remove-orphans --pull always
 
@@ -48,8 +47,6 @@ services:
     networks:
       - media-network
     #  - observability-network
-    labels:
-      - "com.centurylinklabs.watchtower.scope=media"
 
   ## -------------------------
   ## Jellyfin (Media Server)
@@ -76,21 +73,3 @@ services:
     networks:
       - media-network
     #  - observability-network
-    labels:
-      - "com.centurylinklabs.watchtower.scope=media"
-
-  ## -------------------------
-  ## Watchtower (Auto-updates)
-  ## -------------------------
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: media-watchtower
-    restart: always
-    command: >
-      --scope media
-      --cleanup
-      --schedule "0 0 2 * * 2" # every Tuesday 2AM
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - media-network
