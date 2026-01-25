@@ -1,13 +1,18 @@
 # Wyoming Stack
 # - Whisper
 # - Piper
-# - Watchtower
+#
+# Usage: docker compose up -d --force-recreate --remove-orphans --pull always
 
 name: wyoming-stack
 
 networks:
   wyoming-network:
     external: true
+
+volumes:
+  whisper-data:
+  piper-data:
 
 services:
   ## -------------------------
@@ -18,16 +23,14 @@ services:
     container_name: wyoming-whisper
     restart: always
     # Only use GPU runtime if you have NVIDIA GPU
-    runtime: nvidia
+    gpus: all
     command: --model tiny-int8 --language en
     volumes:
-      - ./whisper-data:/data
+      - whisper-data:/data
     networks:
       - wyoming-network
     ports:
       - ${WHISPER_PORT:-10300}:10300
-    labels:
-      - "com.centurylinklabs.watchtower.scope=ha"
 
   ## -------------------------
   ## Piper
@@ -37,30 +40,11 @@ services:
     container_name: wyoming-piper
     restart: always
     # Only use GPU runtime if you have NVIDIA GPU
-    runtime: nvidia
+    gpus: all
     command: --voice en_US-lessac-medium
     volumes:
-      - ./piper-data:/data
+      - piper-data:/data
     networks:
       - wyoming-network
     ports:
       - ${PIPER_PORT:-10200}:10200
-    labels:
-      - "com.centurylinklabs.watchtower.scope=ha"
-
-  ## -------------------------
-  ## Watchtower (Auto-updates)
-  ## -------------------------
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: ha-watchtower
-    restart: always
-    command: >
-      --scope ha
-      --monitor-only
-      --cleanup
-      --schedule "0 0 3 * * 3" # every Wednesday 03:00
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - wyoming-network
