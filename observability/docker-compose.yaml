@@ -7,7 +7,6 @@
 # - cAdvisor
 # - Node Exporter
 # - Grafana
-# - Watchtower
 #
 # Usage: docker compose up -d --force-recreate --remove-orphans --pull always
 
@@ -39,8 +38,6 @@ services:
       - observability-network
     ports:
       - ${UPTIMEKUMA_PORT:-3001}:3001
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## Beszel Hub
@@ -56,8 +53,6 @@ services:
       - observability-network
     ports:
       - ${BESZEL_PORT:-8090}:8090
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## Beszel Agent
@@ -77,8 +72,6 @@ services:
       - ./beszel_socket:/beszel_socket
       - /var/run/docker.sock:/var/run/docker.sock:ro
     network_mode: host
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## ----------------------------------------
   ## Add Metrics & Logs Depth
@@ -97,8 +90,6 @@ services:
       - ./config/loki.yml:/etc/loki/loki-config.yml:ro
     networks:
       - observability-network
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## Promtail (Log collector)
@@ -113,8 +104,6 @@ services:
       - ./config/promtail.yml:/etc/promtail/config.yml:ro
     networks:
       - observability-network
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## Prometheus (Metrics DB)
@@ -135,8 +124,6 @@ services:
       - observability-network
     ports:
       - ${PROMETHEUS_PORT:-9090}:9090
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## Node Exporter (Host metrics)
@@ -151,12 +138,10 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
     network_mode: host
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## cAdvisor (Docker metrics)
@@ -172,8 +157,6 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     networks:
       - observability-network
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## Logporter (Docker logs to Prometheus)
@@ -186,8 +169,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - observability-network
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
 
   ## -------------------------
   ## Grafana (Metrics & Logs)
@@ -207,21 +188,3 @@ services:
       - observability-network
     ports:
       - ${GRAFANA_PORT:-3000}:3000
-    labels:
-      - "com.centurylinklabs.watchtower.observability=observability"
-
-  ## -------------------------
-  ## Watchtower (Auto-updates)
-  ## -------------------------
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: observability-watchtower
-    restart: always
-    command: >
-      --scope observability
-      --cleanup
-      --schedule "0 0 1,15 * *" # 1st and 15th of the month 03:00
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - observability-network
