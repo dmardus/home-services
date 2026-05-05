@@ -44,10 +44,10 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - dockhand-data:/data
+      - dockhand-data:/app/data
     networks:
       - core-network
-    #  - observability-network    
+    #  - observability-network
     ports:
       - ${DOCKHAND_PORT:-3000}:3000
 
