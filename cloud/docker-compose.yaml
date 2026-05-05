@@ -37,7 +37,7 @@ services:
     volumes:
       # Named volume for database (managed via SQL dumps)
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres-initdb:/docker-entrypoint-initdb.d:ro   # place 01-init.sql here
+      - ./postgres-initdb:/docker-entrypoint-initdb.d:ro # place 01-init.sql here
     security_opt:
       - no-new-privileges:true
     healthcheck:
