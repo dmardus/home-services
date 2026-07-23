@@ -12,6 +12,7 @@ A collection of Docker Compose files for self-hosting various services at home.
   - [Photo Stack](#photo-stack)
   - [AI Stack](#ai-stack)
   - [Media Stack](#media-stack)
+  - [Dev Stack](#dev-stack)
   - [Home Assistant Stack](#home-assistant-stack)
   - [NVIDIA SMI](#nvidia-smi)
 - [Port Allocation](#port-allocation)
@@ -90,6 +91,12 @@ This directory contains Docker Compose files for running media-related services.
 *   **Jellyfin:** Another open-source media server, similar to Plex, offering a free and customizable experience.
 *   **[Navidrome](https://github.com/navidrome/navidrome):** A self-hosted music streaming server compatible with the Subsonic API.
 
+### Dev Stack
+
+This directory contains Docker Compose files for self-hosted development tools. It starts out minimal and will grow over time as more dev tools are added.
+
+*   **[Forgejo](https://forgejo.org/):** Self-hosted lightweight Git forge. Currently running standalone with its built-in SQLite database — a dedicated database service may be added later if needed.
+
 ### Home Assistant Stack
 
 This directory contains Docker Compose files for running Wyoming whisper and piper services.
@@ -111,7 +118,8 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | AI | 10200-10299 | Ollama 10200, Open WebUI 10201, n8n 10202, Qdrant 10230, pgvector 10240 |
 | Photo | 10300-10399 | Immich Server 10300 |
 | Media | 10400-10499 | Jellyfin 10400, Plex 10401, Navidrome 10402 |
-| _unassigned_ | 10500-10799 | Free — reserved for future stacks |
+| Dev | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522 |
+| _unassigned_ | 10600-10799 | Free — reserved for future stacks |
 | Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
 | Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, Prometheus 10910, Node Exporter 10920 |
 | Proxy | — | Uses fixed ports 80/443; not actively deployed, range to be assigned later |
