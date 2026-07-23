@@ -131,7 +131,7 @@ Before you begin, ensure you have the following installed:
     docker network create ai-network
     ```
 
-4.  Copy/edit the `.env` file in that directory with your own values (ports, credentials, paths, etc.), then start the stack:
+4.  Copy `.env.example` to `.env` and fill in your own values (ports, credentials, paths, etc.) — `.env` is gitignored, so your real values stay local. Then start the stack:
 
     ```
     docker compose up -d --force-recreate --remove-orphans --pull always
