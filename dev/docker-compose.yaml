@@ -1,0 +1,34 @@
+# Dev Stack
+# - Forgejo (self-hosted Git service)
+#
+# Usage: docker compose up -d --force-recreate --remove-orphans --pull always
+#
+# Forgejo docs: https://forgejo.org/docs/latest/admin/installation/docker/
+# Starting simple: single Forgejo server using its built-in SQLite database.
+# A dedicated database service can be added later if SQLite stops being enough.
+
+name: dev-stack
+
+networks:
+  dev-network:
+    external: true
+
+services:
+  ## -------------------------
+  ## Forgejo (Self-hosted Git)
+  ## -------------------------
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:${FORGEJO_VERSION:-16}
+    container_name: dev-forgejo
+    restart: always
+    environment:
+      - USER_UID=${PUID:-1000}
+      - USER_GID=${PGID:-1000}
+    volumes:
+      - ${FORGEJO_DATA_LOCATION:-./forgejo}:/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - dev-network
+    ports:
+      - ${FORGEJO_HTTP_PORT:-10500}:3000
+      - ${FORGEJO_SSH_PORT:-10522}:22
