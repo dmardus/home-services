@@ -22,7 +22,7 @@ volumes:
 
 services:
   ## -------------------------
-  ## Pex (Media Server)
+  ## Plex (Media Server)
   ## -------------------------
   plex:
     image: linuxserver/plex:latest
@@ -32,9 +32,11 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
       - VERSION=latest
+      # Optional, Plex Pass only: uncomment to auto-claim the server on first run.
+      # Grab a fresh token from https://plex.tv/claim (expires in ~4 minutes) right before starting.
       #- PLEX_CLAIM=${PLEX_CLAIM}
     volumes:
       - plex-config:/config
@@ -60,8 +62,8 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
     volumes:
       - jellyfin-config:/config
       - transcode:/transcode
@@ -83,8 +85,8 @@ services:
     container_name: media-navidrome
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
     volumes:
       - navidrome-data:/data
       - ${MEDIA_PATH}/music:/data/music:ro

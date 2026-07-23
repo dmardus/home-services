@@ -145,14 +145,15 @@ services:
     restart: always
     environment:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-      - N8N_HOST=n8n.mydomain.com
-      - WEBHOOK_TUNNEL_URL=https://n8n.mydomain.com
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - WEBHOOK_TUNNEL_URL=${N8N_WEBHOOK_URL:-http://localhost:5678}
       - N8N_LISTEN_ADDRESS=0.0.0.0
       - N8N_PORT=5678
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
-      - N8N_ENCRYPTION_KEY=poMPMEPOpomDIEJeDeiuiunIUENepdlEWR
+      # No N8N_ENCRYPTION_KEY set: n8n auto-generates one on first run and
+      # persists it in the mounted ./n8n volume.
       - N8N_SECURE_COOKIE=false
       # Postgres config
       - DB_TYPE=postgresdb

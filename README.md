@@ -14,11 +14,11 @@ A collection of Docker Compose files for self-hosting various services at home.
   - [Media Stack](#media-stack)
   - [Home Assistant Stack](#home-assistant-stack)
   - [NVIDIA SMI](#nvidia-smi)
+- [Port Allocation](#port-allocation)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Usage](#usage)
-- [Useful links, channels](#useful-links-channels)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -99,6 +99,21 @@ This directory contains Docker Compose files for running Wyoming whisper and pip
 ### NVIDIA SMI
 
 This directory contains a minimal Docker Compose file used to verify that GPU passthrough is working correctly before deploying GPU-dependent stacks (it just runs `nvidia-smi` inside a container). It requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) to be installed on the host.
+
+## Port Allocation
+
+Each stack owns a reserved block of 100 host ports, so a new service can always be given a free port without colliding with another stack. When adding a service to a stack, pick the next unused port within that stack's range and record it in the stack's `.env.example`.
+
+| Stack | Range | Notes |
+|---|---|---|
+| Core | 10100-10199 | Portainer 10100, Dockhand 10110 |
+| AI | 10200-10299 | Ollama 10200, Open WebUI 10201, n8n 10202, Qdrant 10230, pgvector 10240 |
+| Photo | 10300-10399 | Immich Server 10300 |
+| Media | 10400-10499 | Jellyfin 10400, Plex 10401, Navidrome 10402 |
+| _unassigned_ | 10500-10799 | Free — reserved for future stacks |
+| Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
+| Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, Prometheus 10910, Node Exporter 10920 |
+| Proxy | — | Uses fixed ports 80/443; not actively deployed, range to be assigned later |
 
 ## Getting Started
 
