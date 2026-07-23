@@ -38,6 +38,7 @@ This directory contains Docker Compose files for running core services.
 
 *   **[Portainer](https://www.portainer.io/):** Enterprise-grade container management, simplified and engineered for everyone.
 *   **[Dockhand](https://github.com/Finsys/dockhand):** A lightweight Docker and Compose stack management UI.
+*   **[Arcane](https://github.com/getarcaneapp/arcane):** Modern Docker and Compose management UI with auth, encrypted secrets, and multi-environment agent support.
 *   **[Cloudflare Tunnel](https://github.com/cloudflare/cloudflared):** Exposes local services to the internet without opening inbound ports.
 
 ### Observability Stack
@@ -106,7 +107,7 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 
 | Stack | Range | Notes |
 |---|---|---|
-| Core | 10100-10199 | Portainer 10100, Dockhand 10110 |
+| Core | 10100-10199 | Portainer 10100, Dockhand 10110, Arcane 10120 |
 | AI | 10200-10299 | Ollama 10200, Open WebUI 10201, n8n 10202, Qdrant 10230, pgvector 10240 |
 | Photo | 10300-10399 | Immich Server 10300 |
 | Media | 10400-10499 | Jellyfin 10400, Plex 10401, Navidrome 10402 |

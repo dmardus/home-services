@@ -1,6 +1,7 @@
 # Core Stack
 # - Portainer
 # - Dockhand
+# - Arcane
 # - Cloudflare Tunnel
 #
 # Usage: docker compose up -d --force-recreate --remove-orphans --pull always
@@ -17,6 +18,7 @@ networks:
 volumes:
   portainer-data:
   dockhand-data:
+  arcane-data:
 
 services:
   ## -------------------------
@@ -50,6 +52,28 @@ services:
     #  - observability-network
     ports:
       - ${DOCKHAND_PORT:-3000}:3000
+
+  ## -------------------------
+  ## Arcane (Docker Management UI)
+  ## -------------------------
+  arcane:
+    image: ghcr.io/getarcaneapp/manager:latest
+    container_name: core-arcane
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - arcane-data:/app/data
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - APP_URL=${ARCANE_APP_URL:-http://localhost:3552}
+      - ENCRYPTION_KEY=${ARCANE_ENCRYPTION_KEY}
+      - JWT_SECRET=${ARCANE_JWT_SECRET}
+    networks:
+      - core-network
+    #  - observability-network
+    ports:
+      - ${ARCANE_PORT:-3552}:3552
 
   ## -------------------------
   ## cloudflared (Cloudflare Tunnel)
