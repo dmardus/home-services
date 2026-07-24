@@ -1,2 +1,6 @@
 # Local environment files (copy from the matching .env.example)
 .env
+
+# Hermes Agent secrets and persistent runtime data
+ai/hermes.env
+ai/hermes-data/
