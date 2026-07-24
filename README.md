@@ -82,6 +82,7 @@ This directory contains Docker Compose files for running AI-related services.
 *   **[PostgreSQL](https://www.postgresql.org/)** (with the [pgvector](https://github.com/pgvector/pgvector) extension): Relational database used for long-term memory/embeddings, plus a separate instance backing n8n.
 *   **[Qdrant](https://github.com/qdrant/qdrant):** High-performance, massive-scale Vector Database and Vector Search Engine for the next generation of AI.
 *   **[Redis](https://redis.io/):** In-memory cache used for short-term memory.
+*   **[Hermes Agent](https://github.com/NousResearch/hermes-agent):** Self-improving AI agent from Nous Research with persistent memory, skills, and multi-platform messaging gateways. Runs as a gateway service plus a loopback-only web dashboard for configuration. API keys and provider config live in `ai/hermes.env` (not committed).
 
 ### Media Stack
 
@@ -115,7 +116,7 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | Stack | Range | Notes |
 |---|---|---|
 | Core | 10100-10199 | Portainer 10100, Dockhand 10110, Arcane 10120 |
-| AI | 10200-10299 | Ollama 10200, Open WebUI 10201, n8n 10202, Qdrant 10230, pgvector 10240 |
+| AI | 10200-10299 | Ollama 10200, Open WebUI 10201, n8n 10202, Qdrant 10230, pgvector 10240, Hermes Dashboard 10250 |
 | Photo | 10300-10399 | Immich Server 10300 |
 | Media | 10400-10499 | Jellyfin 10400, Plex 10401, Navidrome 10402 |
 | Dev | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522 |

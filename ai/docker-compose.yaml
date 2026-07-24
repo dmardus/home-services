@@ -6,6 +6,7 @@
 # - Redis
 # - n8n
 # - Open WebUI
+# - Hermes Agent
 #
 # Usage: docker compose up -d --force-recreate --remove-orphans --pull always
 
@@ -197,3 +198,46 @@ services:
       - ${OPENWEBUI_PORT:-8181}:8080
     extra_hosts:
       - host.docker.internal:host-gateway
+
+  ## -------------------------
+  ## Hermes Agent (Self-improving AI agent)
+  ## -------------------------
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: ai-hermes
+    restart: always
+    env_file:
+      - ./hermes.env
+    environment:
+      - HERMES_UID=${PUID}
+      - HERMES_GID=${PGID}
+    volumes:
+      - ./hermes-data:/opt/data
+    networks:
+      - ai-network
+    #  - observability-network
+    command: ["gateway", "run"]
+
+  ## -------------------------
+  ## Hermes Agent Dashboard
+  ## -------------------------
+  hermes-dashboard:
+    image: nousresearch/hermes-agent:latest
+    container_name: ai-hermes-dashboard
+    restart: always
+    depends_on:
+      - hermes
+    env_file:
+      - ./hermes.env
+    environment:
+      - HERMES_UID=${PUID}
+      - HERMES_GID=${PGID}
+    volumes:
+      - ./hermes-data:/opt/data
+    networks:
+      - ai-network
+    # Bound to the container's own 0.0.0.0 so Docker's port mapping can
+    # reach it; the 127.0.0.1 prefix below keeps it loopback-only on the host.
+    ports:
+      - 127.0.0.1:${HERMES_DASHBOARD_PORT:-10250}:9119
+    command: ["dashboard", "--host", "0.0.0.0", "--no-open"]
