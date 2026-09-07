@@ -1,0 +1,56 @@
+*** Targets ***
+
+probe = FPing
+
+menu = Top
+title = Network Latency
+remark = Latency and packet loss for UniFi infrastructure and independent Internet destinations.
+
+# Replace these editable defaults with the static addresses assigned to your UniFi devices.
++ UniFi
+menu = UniFi
+title = UniFi Infrastructure
+
+++ Gateway
+menu = Gateway
+title = UniFi Gateway
+host = 192.168.1.1
+
+++ Controller
+menu = Controller
+title = UniFi Controller
+host = 192.168.1.2
+
+++ Switch
+menu = Switch
+title = UniFi Switch
+host = 192.168.1.3
+
+++ AccessPoint
+menu = Access Point
+title = UniFi Access Point
+host = 192.168.1.4
+
++ Internet
+menu = Internet
+title = Independent Internet Destinations
+
+++ Cloudflare
+menu = Cloudflare
+title = Cloudflare DNS
+host = 1.1.1.1
+
+++ Google
+menu = Google
+title = Google Public DNS
+host = 8.8.8.8
+
+++ Quad9
+menu = Quad9
+title = Quad9 DNS
+host = 9.9.9.9
+
+++ OpenDNS
+menu = OpenDNS
+title = OpenDNS
+host = 208.67.222.222
