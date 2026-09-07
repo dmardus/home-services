@@ -48,6 +48,7 @@ This directory contains Docker Compose files for running observability services.
 
 *   **[Uptime Kuma](https://github.com/louislam/uptime-kuma):** Self-hosted monitoring tool for tracking uptime of services and endpoints.
 *   **[Beszel](https://github.com/henrygd/beszel):** Lightweight server monitoring hub and agent for tracking host resource usage.
+*   **[SmokePing](https://oss.oetiker.ch/smokeping/):** Tracks network latency and packet loss for local infrastructure and Internet destinations. No public reverse-proxy route is configured.
 *   **[Loki](https://github.com/grafana/loki):** Like Prometheus, but for logs.
 *   **[Promtail](https://github.com/jhuix/promtail):** The promtail is the agent based on loki promtail with reserve forward server and client, responsible for gathering logs and sending them to Loki.
 *   **[Prometheus](https://github.com/prometheus/prometheus):** The Prometheus monitoring system and time series database.
@@ -122,7 +123,7 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | Dev | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522 |
 | _unassigned_ | 10600-10799 | Free — reserved for future stacks |
 | Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
-| Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, Prometheus 10910, Node Exporter 10920 |
+| Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, SmokePing 10903, Prometheus 10910, Node Exporter 10920 |
 | Proxy | — | Uses fixed ports 80/443; not actively deployed, range to be assigned later |
 
 ## Getting Started

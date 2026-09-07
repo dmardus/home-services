@@ -4,3 +4,8 @@
 # Hermes Agent secrets and persistent runtime data
 ai/hermes.env
 ai/hermes-data/
+
+# SmokePing generated configuration and time-series data
+observability/smokeping/config/*
+!observability/smokeping/config/Targets
+observability/smokeping/data/
