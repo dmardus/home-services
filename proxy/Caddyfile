@@ -1,0 +1,14 @@
+{
+    admin 0.0.0.0:2019
+}
+
+*.{$LOCAL_DOMAIN} {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        resolvers 1.1.1.1 1.0.0.1
+    }
+
+    handle {
+        respond "Unknown proxy host" 404
+    }
+}

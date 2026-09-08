@@ -61,10 +61,7 @@ This directory contains Docker Compose files for running observability services.
 
 This directory contains Docker Compose files for running proxy services.
 
-*   **[Traefik](https://github.com/traefik/traefik):** The Cloud Native Application Proxy.
-*   **[Watchtower](https://github.com/containrrr/watchtower):** Automatically updates running containers. Configured in `monitor-only` mode in this stack.
-
-> This stack is currently not deployed but is kept in the repository as-is.
+*   **[Caddy](https://caddyserver.com/):** Reverse proxy for local services with automatic HTTPS.
 
 ### Photo Stack
 
@@ -124,7 +121,7 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | _unassigned_ | 10600-10799 | Free — reserved for future stacks |
 | Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
 | Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, SmokePing 10903, Prometheus 10910, Node Exporter 10920 |
-| Proxy | — | Uses fixed ports 80/443; not actively deployed, range to be assigned later |
+| Proxy | — | Uses fixed ports 80/443 |
 
 ## Getting Started
 
