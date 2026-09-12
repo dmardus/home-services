@@ -3,10 +3,6 @@
 # - Beszel Hub & Agent
 # - SmokePing
 # - Loki
-# - Promtail
-# - Prometheus
-# - cAdvisor
-# - Node Exporter
 # - Grafana
 #
 # Usage: docker compose up -d --force-recreate --remove-orphans --pull always
@@ -22,7 +18,7 @@ volumes:
 
 services:
   ## ----------------------------------------
-  ## Start Simple Observability Stack Services
+  ## Simple Observability Stack Services
   ## ----------------------------------------
 
   ## -------------------------
@@ -94,102 +90,8 @@ services:
       - ${SMOKEPING_PORT:-10903}:80
 
   ## ----------------------------------------
-  ## Add Metrics & Logs Depth
+  ## Enchancemented Observability Stack Services
   ## ----------------------------------------
-
-  ## -------------------------
-  ## Loki (Logs database)
-  ## -------------------------
-  loki:
-    image: grafana/loki:latest
-    container_name: observability-loki
-    restart: always
-    command: -config.file=/etc/loki/loki-config.yml
-    volumes:
-      - ./loki:/loki
-      - ./config/loki.yml:/etc/loki/loki-config.yml:ro
-    networks:
-      - observability-network
-
-  ## -------------------------
-  ## Promtail (Log collector)
-  ## -------------------------
-  promtail:
-    image: grafana/promtail:latest
-    container_name: observability-promtail
-    restart: always
-    volumes:
-      - /var/log:/var/log:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./config/promtail.yml:/etc/promtail/config.yml:ro
-    networks:
-      - observability-network
-
-  ## -------------------------
-  ## Prometheus (Metrics DB)
-  ## -------------------------
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: observability-prometheus
-    restart: always
-    volumes:
-      - ./prometheus:/prometheus
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=30d"
-      - "--web.enable-lifecycle"
-    networks:
-      - observability-network
-    ports:
-      - ${PROMETHEUS_PORT:-9090}:9090
-
-  ## -------------------------
-  ## Node Exporter (Host metrics)
-  ## -------------------------
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: observability-node-exporter
-    restart: always
-    pid: host
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - "--path.procfs=/host/proc"
-      - "--path.sysfs=/host/sys"
-      - "--path.rootfs=/rootfs"
-      - "--web.listen-address=:${NODEEXPORTER_PORT:-9100}"
-    network_mode: host
-
-  ## -------------------------
-  ## cAdvisor (Docker metrics)
-  ## -------------------------
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: observability-cadvisor
-    restart: always
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    networks:
-      - observability-network
-
-  ## -------------------------
-  ## Logporter (Docker logs to Prometheus)
-  ## -------------------------
-  logporter:
-    image: lifailon/logporter:latest
-    container_name: observability-logporter
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - observability-network
 
   ## -------------------------
   ## Grafana (Metrics & Logs)
@@ -209,3 +111,17 @@ services:
       - observability-network
     ports:
       - ${GRAFANA_PORT:-3000}:3000
+
+  ## -------------------------
+  ## Loki (Logs database)
+  ## -------------------------
+  loki:
+    image: grafana/loki:latest
+    container_name: observability-loki
+    restart: always
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./loki:/loki
+      - ./config/loki.yml:/etc/loki/loki-config.yml:ro
+    networks:
+      - observability-network
