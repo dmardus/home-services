@@ -9,9 +9,10 @@ name: media-stack
 networks:
   media-network:
     external: true
-  # Connect to Observability
-  # observability-network:
-  #   external: true
+  observability-network:
+    external: true
+  proxy-network:
+    external: true
 
 # Named volumes for persistent data
 volumes:
@@ -49,7 +50,8 @@ services:
       - ${PLEX_PORT:-32400}:32400
     networks:
       - media-network
-    #  - observability-network
+      - observability-network
+      - proxy-network
 
   ## -------------------------
   ## Jellyfin (Media Server)
@@ -75,7 +77,8 @@ services:
       - ${JELLYFIN_PORT:-8096}:8096
     networks:
       - media-network
-    #  - observability-network
+      - observability-network
+      - proxy-network
 
   ## -------------------------
   ## Navidrome (Music Server)
@@ -94,4 +97,5 @@ services:
       - ${NAVIDROME_PORT:-4533}:4533
     networks:
       - media-network
-    #  - observability-network
+      - observability-network
+      - proxy-network

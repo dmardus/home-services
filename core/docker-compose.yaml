@@ -11,9 +11,10 @@ name: core-stack
 networks:
   core-network:
     external: true
-  # Connect to Observability
-  # observability-network:
-  #   external: true
+  observability-network:
+    external: true
+  proxy-network:
+    external: true
 
 volumes:
   portainer-data:
@@ -33,7 +34,8 @@ services:
       - portainer-data:/data
     networks:
       - core-network
-    #  - observability-network
+      - observability-network
+      - proxy-network
     ports:
       - ${PORTAINER_PORT:-9443}:9443
 
@@ -49,7 +51,8 @@ services:
       - dockhand-data:/app/data
     networks:
       - core-network
-    #  - observability-network
+      - observability-network
+      - proxy-network
     ports:
       - ${DOCKHAND_PORT:-3000}:3000
 
@@ -71,7 +74,8 @@ services:
       - JWT_SECRET=${ARCANE_JWT_SECRET}
     networks:
       - core-network
-    #  - observability-network
+      - observability-network
+      - proxy-network
     ports:
       - ${ARCANE_PORT:-3552}:3552
 
@@ -87,4 +91,3 @@ services:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     networks:
       - core-network
-    #  - observability-network

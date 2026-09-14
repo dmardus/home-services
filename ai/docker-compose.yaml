@@ -15,9 +15,10 @@ name: ai-stack
 networks:
   ai-network:
     external: true
-  # Connect to Observability
-  # observability-network:
-  #   external: true
+  observability-network:
+    external: true
+  proxy-network:
+    external: true
 
 # Named volumes for databases
 volumes:
@@ -63,7 +64,8 @@ services:
       - ./searxng:/etc/searxng
     networks:
       - ai-network
-    #  - observability-network
+      - observability-network
+      - proxy-network
 
   ## -------------------------
   ## PostgreSQL (DB) - for n8n
