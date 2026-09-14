@@ -19,6 +19,7 @@ A collection of Docker Compose files for self-hosting various services at home.
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
+  - [Deployment Order](#deployment-order)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
@@ -49,13 +50,76 @@ This directory contains Docker Compose files for running observability services.
 *   **[Uptime Kuma](https://github.com/louislam/uptime-kuma):** Self-hosted monitoring tool for tracking uptime of services and endpoints.
 *   **[Beszel](https://github.com/henrygd/beszel):** Lightweight server monitoring hub and agent for tracking host resource usage.
 *   **[SmokePing](https://oss.oetiker.ch/smokeping/):** Tracks network latency and packet loss for local infrastructure and Internet destinations. No public reverse-proxy route is configured.
-*   **[Loki](https://github.com/grafana/loki):** Like Prometheus, but for logs.
-*   **[Promtail](https://github.com/jhuix/promtail):** The promtail is the agent based on loki promtail with reserve forward server and client, responsible for gathering logs and sending them to Loki.
-*   **[Prometheus](https://github.com/prometheus/prometheus):** The Prometheus monitoring system and time series database.
-*   **[Node Exporter](https://github.com/prometheus/node_exporter):** Exposes host-level hardware and OS metrics for Prometheus.
-*   **[cAdvisor](https://github.com/google/cadvisor):** Analyzes resource usage and performance characteristics of running containers.
-*   **[Logporter](https://github.com/Lifailon/logporter):** Lightweight alternative to cAdvisor for exposing container metrics, including metrics derived from logs.
 *   **[Grafana](https://github.com/grafana/grafana):** The open and composable observability and data visualization platform.
+*   **[VictoriaMetrics](https://victoriametrics.com/):** Fast, cost-effective monitoring solution and time series database.
+*   **[Loki](https://github.com/grafana/loki):** Log aggregation and storage system.
+
+```mermaid
+flowchart LR
+    subgraph Sources[Telemetry Sources]
+        direction TB
+        Windows[Windows PC<br/>Native Alloy service]
+        Fedora[Fedora VM<br/>Native Alloy service]
+        WSL[WSL<br/>Native Alloy and HA metrics scraper]
+        HomeAssistant[Home Assistant mini-PC<br/>HTTPS /api/prometheus target]
+    end
+
+    subgraph Ingress[Protected Ingress]
+        Caddy[Caddy<br/>TLS, Basic Auth, source restriction<br/>Exact write methods and paths]
+    end
+
+    subgraph Stores[Telemetry Stores]
+        direction TB
+        VictoriaMetrics[VictoriaMetrics<br/>Metrics with 30-day retention]
+        Loki[Loki<br/>Selected, bounded logs]
+    end
+
+    subgraph Investigation[Investigation]
+        direction TB
+        Grafana[Grafana<br/>Metrics and logs exploration]
+        Agent[AI Investigation Agent<br/>Read-only correlated investigations]
+    end
+
+    subgraph Evidence[Complementary Evidence]
+        direction LR
+        SmokePing[SmokePing<br/>Latency and packet loss]
+        Beszel[Beszel<br/>Independent host view]
+        HealthMonitor[Scheduled Health Monitor<br/>Deterministic checks and AI-assisted analysis]
+    end
+
+    WSL -->|HTTPS GET /api/prometheus| HomeAssistant
+    HomeAssistant -->|Metrics response| WSL
+
+    Windows -->|Remote-write metrics| Caddy
+    Fedora -->|Remote-write metrics| Caddy
+    WSL -->|Remote-write metrics| Caddy
+    Windows -->|Selected logs| Caddy
+    Fedora -->|Selected logs| Caddy
+    WSL -->|Selected logs| Caddy
+
+    Caddy -->|POST /api/v1/write| VictoriaMetrics
+    Caddy -->|POST /loki/api/v1/push| Loki
+
+    Grafana -->|PromQL / MetricsQL| VictoriaMetrics
+    Grafana -->|LogQL| Loki
+    Agent -->|Read-only queries| Grafana
+
+    SmokePing -->|Incident context| Agent
+    Beszel -->|Incident context| Agent
+    HealthMonitor -->|Incident context| Agent
+
+    classDef source fill:#0b1b2b,stroke:#00d9ff,color:#d7e3f4
+    classDef ingress fill:#0b1b2b,stroke:#ff5c7a,color:#d7e3f4
+    classDef store fill:#0b1b2b,stroke:#9b7bff,color:#d7e3f4
+    classDef investigation fill:#0b1b2b,stroke:#2ee6a6,color:#d7e3f4
+    classDef evidence fill:#0b1b2b,stroke:#ffc400,color:#d7e3f4
+
+    class Windows,Fedora,WSL,HomeAssistant source
+    class Caddy ingress
+    class VictoriaMetrics,Loki store
+    class Grafana,Agent investigation
+    class SmokePing,Beszel,HealthMonitor evidence
+```
 
 ### Proxy Stack
 
@@ -120,7 +184,7 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | Dev | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522 |
 | _unassigned_ | 10600-10799 | Free — reserved for future stacks |
 | Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
-| Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, SmokePing 10903, Prometheus 10910, Node Exporter 10920 |
+| Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, SmokePing 10903 |
 | Proxy | — | Uses fixed ports 80/443 |
 
 ## Getting Started
@@ -142,25 +206,37 @@ Before you begin, ensure you have the following installed:
     cd home-services
     ```
 
-2.  Navigate to the directory of the stack you want to deploy (e.g., `ai`):
+2.  Create all external Docker networks before deploying any stack. Compose treats these networks as prerequisites, and the observability stack also uses `proxy-network` for Caddy access.
 
-    ```
-    cd ai
-    ```
-
-3.  Each stack connects to its own external Docker network, so create it before starting the stack for the first time (the network name matches the stack, e.g. `ai-network`):
-
-    ```
+    ```bash
+    docker network create proxy-network
+    docker network create observability-network
+    docker network create core-network
     docker network create ai-network
+    docker network create photo-network
+    docker network create media-network
+    docker network create dev-network
+    docker network create wyoming-network
     ```
 
-4.  Copy `.env.example` to `.env` and fill in your own values (ports, credentials, paths, etc.) — `.env` is gitignored, so your real values stay local. Then start the stack:
+3.  Copy `.env.example` to `.env` in each stack you plan to deploy and fill in your own values. The `.env` files are gitignored, so credentials and local settings remain private.
 
-    ```
-    docker compose up -d --force-recreate --remove-orphans --pull always
-    ```
+### Deployment Order
 
-    This will download the necessary images and start the service in detached mode.
+After the external networks and environment files are ready, use this recommended deployment order:
+
+1.  **Observability:** Starts VictoriaMetrics, Loki, Grafana, and the supporting monitoring services.
+2.  **Proxy:** Starts Caddy after its observability upstreams are available.
+3.  **Core:** Starts container-management and other core services.
+4.  **Remaining stacks:** Deploy AI, Photo, Media, Dev, Wyoming, and other independent stacks in any order.
+
+From each stack directory, run:
+
+```bash
+docker compose up -d --force-recreate --remove-orphans --pull always
+```
+
+This downloads the required images and starts each stack in detached mode. Once all dependencies are running, configure or start external telemetry clients such as Alloy.
 
 ## Usage
 

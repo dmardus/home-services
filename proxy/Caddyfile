@@ -1,14 +1,67 @@
 {
-    admin 0.0.0.0:2019
+	admin 0.0.0.0:2019
 }
 
 *.{$LOCAL_DOMAIN} {
-    tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-        resolvers 1.1.1.1 1.0.0.1
-    }
+	tls {
+		dns cloudflare {$CLOUDFLARE_API_TOKEN}
+		resolvers 1.1.1.1 1.0.0.1
+	}
 
-    handle {
-        respond "Unknown proxy host" 404
-    }
+	@dockhand host dockhand.{$LOCAL_DOMAIN}
+	handle @dockhand {
+		reverse_proxy http://dockhand:3000
+	}
+
+	@searxng host searxng.{$LOCAL_DOMAIN}
+	handle @searxng {
+		reverse_proxy http://searxng:8080
+	}
+
+	@jellyfin host jellyfin.{$LOCAL_DOMAIN}
+	handle @jellyfin {
+		reverse_proxy http://jellyfin:8096
+	}
+
+	@navidrome host navidrome.{$LOCAL_DOMAIN}
+	handle @navidrome {
+		reverse_proxy http://navidrome:4533
+	}
+
+	@victoriametrics_write {
+		host victoriametrics.{$LOCAL_DOMAIN}
+		method POST
+		path /api/v1/write
+		remote_ip {$VICTORIAMETRICS_ALLOWED_SOURCES}
+	}
+
+	handle @victoriametrics_write {
+		basic_auth {
+			{$VICTORIAMETRICS_USERNAME} {$VICTORIAMETRICS_PASSWORD_HASH}
+		}
+		reverse_proxy victoria-metrics:8428 {
+			header_up -Authorization
+		}
+	}
+
+	@loki_write {
+		host loki.{$LOCAL_DOMAIN}
+		method POST
+		path /loki/api/v1/push
+		remote_ip {$LOKI_ALLOWED_SOURCES}
+	}
+
+	handle @loki_write {
+		basic_auth {
+			{$LOKI_USERNAME} {$LOKI_PASSWORD_HASH}
+		}
+
+		reverse_proxy loki:3100 {
+			header_up -Authorization
+		}
+	}
+
+	handle {
+		respond "Unknown proxy host" 404
+	}
 }
