@@ -12,7 +12,7 @@ A collection of Docker Compose files for self-hosting various services at home.
   - [Photo Stack](#photo-stack)
   - [AI Stack](#ai-stack)
   - [Media Stack](#media-stack)
-  - [Dev Stack](#dev-stack)
+  - [Tools Stack](#tools-stack)
   - [Home Assistant Stack](#home-assistant-stack)
   - [NVIDIA SMI](#nvidia-smi)
 - [Port Allocation](#port-allocation)
@@ -154,11 +154,12 @@ This directory contains Docker Compose files for running media-related services.
 *   **Jellyfin:** Another open-source media server, similar to Plex, offering a free and customizable experience.
 *   **[Navidrome](https://github.com/navidrome/navidrome):** A self-hosted music streaming server compatible with the Subsonic API.
 
-### Dev Stack
+### Tools Stack
 
-This directory contains Docker Compose files for self-hosted development tools. It starts out minimal and will grow over time as more dev tools are added.
+This directory contains Docker Compose files for self-hosted utility services — developer tools today, with room to grow into other general-purpose utilities over time.
 
 *   **[Forgejo](https://forgejo.org/):** Self-hosted lightweight Git forge. Currently running standalone with its built-in SQLite database — a dedicated database service may be added later if needed.
+*   **[IT-Tools](https://github.com/sharevb/it-tools):** Collection of handy online tools for developers (JSON/YAML formatting, JWT decoding, UUID/hash generation, regex testing, and more). Stateless, no persistent data.
 
 ### Home Assistant Stack
 
@@ -181,7 +182,7 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | AI | 10200-10299 | Ollama 10200, Open WebUI 10201, n8n 10202, Qdrant 10230, pgvector 10240, Hermes Dashboard 10250 |
 | Photo | 10300-10399 | Immich Server 10300 |
 | Media | 10400-10499 | Jellyfin 10400, Plex 10401, Navidrome 10402 |
-| Dev | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522 |
+| Tools | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522, IT-Tools 10510 |
 | _unassigned_ | 10600-10799 | Free — reserved for future stacks |
 | Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
 | Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, SmokePing 10903 |
@@ -215,7 +216,7 @@ Before you begin, ensure you have the following installed:
     docker network create ai-network
     docker network create photo-network
     docker network create media-network
-    docker network create dev-network
+    docker network create tools-network
     docker network create wyoming-network
     ```
 
@@ -228,7 +229,7 @@ After the external networks and environment files are ready, use this recommende
 1.  **Observability:** Starts VictoriaMetrics, Loki, Grafana, and the supporting monitoring services.
 2.  **Proxy:** Starts Caddy after its observability upstreams are available.
 3.  **Core:** Starts container-management and other core services.
-4.  **Remaining stacks:** Deploy AI, Photo, Media, Dev, Wyoming, and other independent stacks in any order.
+4.  **Remaining stacks:** Deploy AI, Photo, Media, Tools, Wyoming, and other independent stacks in any order.
 
 From each stack directory, run:
 
