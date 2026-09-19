@@ -1,12 +1,19 @@
 # Tools Stack
 # - Forgejo (self-hosted Git service)
 # - IT-Tools (collection of handy online tools for developers)
+# - Kasm Workspaces (browser-based containerized desktops/apps)
 #
 # Usage: docker compose up -d --force-recreate --remove-orphans --pull always
 #
 # Forgejo docs: https://forgejo.org/docs/latest/admin/installation/docker/
 # Starting simple: single Forgejo server using its built-in SQLite database.
 # A dedicated database service can be added later if SQLite stops being enough.
+#
+# Kasm docs: https://docs.linuxserver.io/images/docker-kasm/
+# Kasm runs Docker-in-Docker and requires privileged mode. It is exposed on
+# direct host ports (no Caddy reverse proxy) because it serves a self-signed
+# HTTPS certificate and needs an extra one-time zone change ("Proxy Port" = 0)
+# to work behind a reverse proxy at all.
 
 name: tools-stack
 
@@ -48,3 +55,35 @@ services:
       - proxy-network
     ports:
       - ${IT_TOOLS_PORT:-10510}:8080
+
+  ## -------------------------
+  ## Kasm Workspaces (Containerized browser/desktop streaming)
+  ## -------------------------
+  # Not on proxy-network: Kasm serves its own self-signed HTTPS certificate,
+  # and putting it behind Caddy requires extra backend TLS config plus a
+  # one-time change to the "Proxy Port" zone setting inside Kasm itself.
+  # Access directly at https://<host>:${KASM_INSTALL_PORT} for first-time
+  # setup, then https://<host>:${KASM_PORT} for normal use.
+  kasm:
+    image: lscr.io/linuxserver/kasm:latest
+    container_name: tools-kasm
+    privileged: true
+    # Some hosts require this on top of privileged mode for namespacing to
+    # work properly inside Kasm's Docker-in-Docker layer. Uncomment if the
+    # workspaces fail to start.
+    # security_opt:
+    #   - apparmor:rootlesskit
+    environment:
+      - KASM_PORT=${KASM_PORT:-10530}
+      # - DOCKER_HUB_USERNAME= # optional, for pulling private workspace images
+      # - DOCKER_HUB_PASSWORD= # optional, for pulling private workspace images
+      # - DOCKER_MTU=1500 # optional
+    volumes:
+      - ${KASM_DATA_LOCATION:-./kasm}:/opt
+      # - ${KASM_PROFILES_LOCATION:-./kasm-profiles}:/profiles # optional, persistent workspace profiles
+    networks:
+      - tools-network
+    ports:
+      - ${KASM_INSTALL_PORT:-10520}:3000
+      - ${KASM_PORT:-10530}:${KASM_PORT:-10530}
+    stop_grace_period: 90s

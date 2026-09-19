@@ -160,6 +160,7 @@ This directory contains Docker Compose files for self-hosted utility services �
 
 *   **[Forgejo](https://forgejo.org/):** Self-hosted lightweight Git forge. Currently running standalone with its built-in SQLite database — a dedicated database service may be added later if needed.
 *   **[IT-Tools](https://github.com/sharevb/it-tools):** Collection of handy online tools for developers (JSON/YAML formatting, JWT decoding, UUID/hash generation, regex testing, and more). Stateless, no persistent data.
+*   **[Kasm Workspaces](https://docs.linuxserver.io/images/docker-kasm/):** Docker container streaming platform for on-demand, browser-based access to desktops and applications. Runs privileged with Docker-in-Docker; exposed on direct host ports rather than through Caddy since it serves its own self-signed HTTPS certificate. Visit the install port first to complete setup, then use the workspaces port for normal access.
 
 ### Home Assistant Stack
 
@@ -182,7 +183,7 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | AI | 10200-10299 | Ollama 10200, Open WebUI 10201, n8n 10202, Qdrant 10230, pgvector 10240, Hermes Dashboard 10250 |
 | Photo | 10300-10399 | Immich Server 10300 |
 | Media | 10400-10499 | Jellyfin 10400, Plex 10401, Navidrome 10402 |
-| Tools | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522, IT-Tools 10510 |
+| Tools | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522, IT-Tools 10510, Kasm Install Wizard 10520, Kasm Workspaces 10530 |
 | _unassigned_ | 10600-10799 | Free — reserved for future stacks |
 | Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
 | Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, SmokePing 10903 |
