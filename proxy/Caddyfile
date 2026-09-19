@@ -28,6 +28,11 @@
 		reverse_proxy http://navidrome:4533
 	}
 
+	@it-tools host it-tools.{$LOCAL_DOMAIN}
+	handle @it-tools {
+		reverse_proxy http://it-tools:8080
+	}
+
 	@victoriametrics_write {
 		host victoriametrics.{$LOCAL_DOMAIN}
 		method POST

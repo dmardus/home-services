@@ -1,5 +1,6 @@
-# Dev Stack
+# Tools Stack
 # - Forgejo (self-hosted Git service)
+# - IT-Tools (collection of handy online tools for developers)
 #
 # Usage: docker compose up -d --force-recreate --remove-orphans --pull always
 #
@@ -7,10 +8,12 @@
 # Starting simple: single Forgejo server using its built-in SQLite database.
 # A dedicated database service can be added later if SQLite stops being enough.
 
-name: dev-stack
+name: tools-stack
 
 networks:
-  dev-network:
+  tools-network:
+    external: true
+  proxy-network:
     external: true
 
 services:
@@ -19,7 +22,7 @@ services:
   ## -------------------------
   forgejo:
     image: codeberg.org/forgejo/forgejo:${FORGEJO_VERSION:-16}
-    container_name: dev-forgejo
+    container_name: tools-forgejo
     restart: always
     environment:
       - USER_UID=${PUID:-1000}
@@ -28,7 +31,20 @@ services:
       - ${FORGEJO_DATA_LOCATION:-./forgejo}:/data
       - /etc/localtime:/etc/localtime:ro
     networks:
-      - dev-network
+      - tools-network
     ports:
       - ${FORGEJO_HTTP_PORT:-10500}:3000
       - ${FORGEJO_SSH_PORT:-10522}:22
+
+  ## -------------------------
+  ## IT-Tools (Developer Utilities)
+  ## -------------------------
+  it-tools:
+    image: sharevb/it-tools:latest
+    container_name: tools-it-tools
+    restart: always
+    networks:
+      - tools-network
+      - proxy-network
+    ports:
+      - ${IT_TOOLS_PORT:-10510}:8080
