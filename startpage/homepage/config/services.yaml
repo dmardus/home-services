@@ -1,0 +1,154 @@
+# yaml-language-server: $schema=../../schemas/homepage-services.schema.json
+---
+- Core:
+    - Caddy:
+        icon: caddy.png
+        description: TLS and reverse proxy
+        widget:
+          type: caddy
+          url: "{{HOMEPAGE_VAR_CADDY_API_URL}}"
+          fields:
+            - upstreams
+            - requests
+            - requests_failed
+
+    - UniFi Network:
+        icon: unifi.png
+        href: "{{HOMEPAGE_VAR_UNIFI_URL}}"
+        description: Network management
+        widget:
+            type: unifi
+            url: "{{HOMEPAGE_VAR_UNIFI_URL}}"
+            key: "{{HOMEPAGE_VAR_UNIFI_API_KEY}}"
+            fields:
+                - uptime
+                - wan
+                - lan_users
+                - wlan_users
+
+    - Home Assistant:
+        icon: home-assistant.png
+        href: "{{HOMEPAGE_VAR_HOMEASSISTANT_URL}}"
+        description: Home automation and device control
+        siteMonitor: "{{HOMEPAGE_VAR_HOMEASSISTANT_URL}}"
+        widget:
+          type: homeassistant
+          url: "{{HOMEPAGE_VAR_HOMEASSISTANT_URL}}"
+          key: "{{HOMEPAGE_VAR_HOMEASSISTANT_TOKEN}}"
+          fields: ["people_home", "lights_on", "switches_on"]
+
+    - Vision Assistant:
+        icon: mdi-robot-outline
+        href: "{{HOMEPAGE_VAR_HERMES_URL}}"
+        description: AI assistant
+        siteMonitor: "{{HOMEPAGE_VAR_HERMES_URL}}"
+
+    - Vision Administration:
+        icon: fedora.png
+        href: "{{HOMEPAGE_VAR_COCKPIT_URL}}"
+        description: Linux host administration
+
+    - Homepage:
+        icon: homepage.png
+        href: "{{HOMEPAGE_VAR_HOMEPAGE_URL}}"
+        description: Application dashboard
+        siteMonitor: "{{HOMEPAGE_VAR_HOMEPAGE_URL}}/api/healthcheck"
+
+- Observability & Infrastructure:
+    - Beszel:
+        icon: beszel.png
+        href: "{{HOMEPAGE_VAR_BESZEL_URL}}"
+        description: Host and container monitoring
+        siteMonitor: "{{HOMEPAGE_VAR_BESZEL_URL}}"
+        widget:
+          type: beszel
+          url: "{{HOMEPAGE_VAR_BESZEL_URL}}"
+          username: "{{HOMEPAGE_VAR_BESZEL_USERNAME}}"
+          password: "{{HOMEPAGE_VAR_BESZEL_PASSWORD}}"
+          version: 2
+          fields: ["systems", "up"]
+
+    - Grafana:
+        icon: grafana.png
+        href: "{{HOMEPAGE_VAR_GRAFANA_URL}}"
+        description: Metrics and dashboards
+        siteMonitor: "{{HOMEPAGE_VAR_GRAFANA_URL}}"
+
+    - SmokePing:
+        icon: smokeping.png
+        href: "{{HOMEPAGE_VAR_SMOKEPING_URL}}"
+        description: Network latency history
+        siteMonitor: "{{HOMEPAGE_VAR_SMOKEPING_URL}}"
+
+    - Dockhand:
+        icon: dockhand.png
+        href: "{{HOMEPAGE_VAR_DOCKHAND_URL}}"
+        description: Container and Compose management
+        siteMonitor: "{{HOMEPAGE_VAR_DOCKHAND_URL}}"
+        widget:
+          type: dockhand
+          url: "{{HOMEPAGE_VAR_DOCKHAND_URL}}"
+          key: "{{HOMEPAGE_VAR_DOCKHAND_API_KEY}}"
+          environment: WSL
+          fields:
+            - running
+            - stopped
+            - cpu
+            - memory
+
+- AI & Utilities:
+    - Open WebUI:
+        icon: open-webui.png
+        href: "{{HOMEPAGE_VAR_OPENWEBUI_URL}}"
+        description: Local AI chat interface
+        siteMonitor: "{{HOMEPAGE_VAR_OPENWEBUI_URL}}"
+
+    - Private Search:
+        icon: searxng.png
+        href: "{{HOMEPAGE_VAR_SEARXNG_URL}}"
+        description: Private metasearch
+        siteMonitor: "{{HOMEPAGE_VAR_SEARXNG_URL}}"
+
+    - IT Tools:
+        icon: it-tools.png
+        href: "{{HOMEPAGE_VAR_ITTOOLS_URL}}"
+        description: Browser-based technical utilities
+        siteMonitor: "{{HOMEPAGE_VAR_ITTOOLS_URL}}"
+
+- Media:
+    - Immich:
+        icon: immich.png
+        href: "{{HOMEPAGE_VAR_IMMICH_URL}}"
+        description: Photo and video library
+        siteMonitor: "{{HOMEPAGE_VAR_IMMICH_URL}}"
+        widget:
+          type: immich
+          url: "{{HOMEPAGE_VAR_IMMICH_URL}}"
+          key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
+          version: 2
+          fields:
+            - users
+            - photos
+            - videos
+
+    - Jellyfin:
+        icon: jellyfin.png
+        href: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
+        description: Movies and television
+        siteMonitor: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
+        widget:
+          type: jellyfin
+          url: "{{HOMEPAGE_VAR_JELLYFIN_URL}}"
+          key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
+          version: 2
+          enableBlocks: true
+          enableNowPlaying: true
+          enableUser: false
+          enableMediaControl: false
+          fields: ["movies", "series", "songs"]
+
+    - Navidrome:
+        icon: navidrome.png
+        href: "{{HOMEPAGE_VAR_NAVIDROME_URL}}"
+        description: Music library and streaming
+        siteMonitor: "{{HOMEPAGE_VAR_NAVIDROME_URL}}"

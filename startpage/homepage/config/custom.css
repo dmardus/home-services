@@ -1,0 +1,76 @@
+/* Cobalt2 theme for Homepage v2.x.
+ * Uses Homepage's stable theme variables and semantic card classes.
+ */
+
+:root,
+:root.dark {
+  --color-50: 248 252 255;
+  --color-100: 231 241 247;
+  --color-200: 184 199 209;
+  --color-300: 255 198 0;
+  --color-400: 0 136 255;
+  --color-500: 0 136 255;
+  --color-600: 35 78 109;
+  --color-700: 31 70 98;
+  --color-800: 25 53 73;
+  --color-900: 18 39 56;
+  --color-950: 13 29 42;
+  --color-logo-stop: 255 198 0;
+  --scrollbar-thumb: rgb(35 78 109);
+  --scrollbar-track: rgb(18 39 56);
+}
+
+html,
+body {
+  background-color: #193549 !important;
+}
+
+.service-card,
+.bookmark {
+  background: rgba(31, 70, 98, 0.82) !important;
+  border: 1px solid rgba(0, 136, 255, 0.24);
+  box-shadow: 0 8px 24px rgba(13, 29, 42, 0.22) !important;
+  transition: background-color 150ms ease, border-color 150ms ease,
+    transform 150ms ease, box-shadow 150ms ease;
+}
+
+.service-card:hover,
+.bookmark:hover {
+  background: rgba(35, 78, 109, 0.96) !important;
+  border-color: rgba(255, 198, 0, 0.7);
+  box-shadow: 0 10px 28px rgba(13, 29, 42, 0.34) !important;
+  transform: translateY(-1px);
+}
+
+.service-group-name,
+.bookmark-group-name {
+  color: #ffc600 !important;
+  letter-spacing: 0.01em;
+}
+
+.service-name,
+.bookmark-name {
+  color: #ffffff !important;
+}
+
+.service-description,
+.bookmark-description {
+  color: #b8c7d1 !important;
+}
+
+input,
+button,
+select {
+  accent-color: #ffc600;
+}
+
+input:focus,
+button:focus-visible,
+a:focus-visible {
+  outline-color: #ffc600 !important;
+}
+
+::selection {
+  color: #122738;
+  background: #ffc600;
+}

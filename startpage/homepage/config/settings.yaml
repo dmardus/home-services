@@ -1,0 +1,30 @@
+---
+title: HomeLab
+description: HomeLab services and operations
+startUrl: "{{HOMEPAGE_VAR_HOMEPAGE_URL}}"
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+useEqualHeights: true
+disableCollapse: false
+hideVersion: false
+target: _blank
+
+layout:
+  Core:
+    style: row
+    columns: 3
+    icon: mdi-home-automation
+  Observability & Infrastructure:
+    style: row
+    columns: 4
+    icon: mdi-chart-line
+  AI & Utilities:
+    style: row
+    columns: 3
+    icon: mdi-robot-outline
+  Media:
+    style: row
+    columns: 3
+    icon: mdi-play-circle-outline
