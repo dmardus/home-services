@@ -15,6 +15,7 @@ A collection of Docker Compose files for self-hosting various services at home.
   - [Tools Stack](#tools-stack)
   - [Home Assistant Stack](#home-assistant-stack)
   - [NVIDIA SMI](#nvidia-smi)
+  - [Startpage Stack](#startpage-stack)
 - [Port Allocation](#port-allocation)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
@@ -173,6 +174,12 @@ This directory contains Docker Compose files for running Wyoming whisper and pip
 
 This directory contains a minimal Docker Compose file used to verify that GPU passthrough is working correctly before deploying GPU-dependent stacks (it just runs `nvidia-smi` inside a container). It requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) to be installed on the host.
 
+### Startpage Stack
+
+This directory contains Docker Compose files for running a homelab startpage/dashboard. Deployed last, since it's most useful once every other stack it can link to and pull status from already exists.
+
+*   **[Homepage](https://github.com/gethomepage/homepage):** Highly customizable, YAML-configured startpage with service widgets and Docker auto-discovery.
+
 ## Port Allocation
 
 Each stack owns a reserved block of 100 host ports, so a new service can always be given a free port without colliding with another stack. When adding a service to a stack, pick the next unused port within that stack's range and record it in the stack's `.env.example`.
@@ -184,7 +191,8 @@ Each stack owns a reserved block of 100 host ports, so a new service can always 
 | Photo | 10300-10399 | Immich Server 10300 |
 | Media | 10400-10499 | Jellyfin 10400, Plex 10401, Navidrome 10402 |
 | Tools | 10500-10599 | Forgejo HTTP 10500, Forgejo SSH 10522, IT-Tools 10510, Kasm Install Wizard 10520, Kasm Workspaces 10530 |
-| _unassigned_ | 10600-10799 | Free — reserved for future stacks |
+| Startpage | 10600-10699 | Homepage 10600 |
+| _unassigned_ | 10700-10799 | Free — reserved for future stacks |
 | Home Assistant | 10800-10899 | Whisper 10800, Piper 10801 |
 | Observability | 10900-10999 | Grafana 10900, Uptime Kuma 10901, Beszel 10902, SmokePing 10903 |
 | Proxy | — | Uses fixed ports 80/443 |
@@ -219,6 +227,7 @@ Before you begin, ensure you have the following installed:
     docker network create media-network
     docker network create tools-network
     docker network create wyoming-network
+    docker network create startpage-network
     ```
 
 3.  Copy `.env.example` to `.env` in each stack you plan to deploy and fill in your own values. The `.env` files are gitignored, so credentials and local settings remain private.
@@ -231,6 +240,7 @@ After the external networks and environment files are ready, use this recommende
 2.  **Proxy:** Starts Caddy after its observability upstreams are available.
 3.  **Core:** Starts container-management and other core services.
 4.  **Remaining stacks:** Deploy AI, Photo, Media, Tools, Wyoming, and other independent stacks in any order.
+5.  **Startpage:** Deploy last, once the services it links to and pulls status from are already running.
 
 From each stack directory, run:
 

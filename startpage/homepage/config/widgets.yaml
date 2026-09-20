@@ -1,0 +1,24 @@
+---
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: medium
+      timeStyle: short
+      hour12: true
+
+- openmeteo:
+    label: "{{HOMEPAGE_VAR_WEATHER_LABEL}}"
+    latitude: "{{HOMEPAGE_VAR_WEATHER_LATITUDE}}"
+    longitude: "{{HOMEPAGE_VAR_WEATHER_LONGITUDE}}"
+    timezone: "{{HOMEPAGE_VAR_WEATHER_TIMEZONE}}"
+    units: "{{HOMEPAGE_VAR_WEATHER_UNITS}}"
+    cache: 10
+    format:
+      maximumFractionDigits: 0
+
+- search:
+    provider: custom
+    url: "{{HOMEPAGE_VAR_SEARXNG_SEARCH_URL}}"
+    target: _blank
+    focus: false
+    showSearchSuggestions: false

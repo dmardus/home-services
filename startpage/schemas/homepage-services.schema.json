@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homepage-services.schema.json",
+  "title": "Homepage services.yaml",
+  "description": "Minimal local schema that prevents generic services.yaml files from being misidentified as Symfony configuration.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "minProperties": 1
+  }
+}
